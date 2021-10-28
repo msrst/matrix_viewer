@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.figure
 import math
 import time
+import os
+import platform
 
 from numpy.lib.function_base import select
 
@@ -59,8 +61,16 @@ class Viewer():
         self.canvas1.bind("<ButtonPress-1>", self.on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self.on_mouse_release)
         self.canvas1.bind("<Motion>", self.on_mouse_motion)
+        # see https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar#17457843
+        if platform.system() == "Linux":
+            self.canvas1.bind_all("<Button-4>", lambda event: self.on_mouse_wheel(event, -1))
+            self.canvas1.bind_all("<Button-5>", lambda event: self.on_mouse_wheel(event, 1))
+        elif platform.system() == "Windows":
+            self.canvas1.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, -event.delta // 120))
+        else: # Mac (untested, sorry I have no Mac)
+            self.canvas1.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, event.delta))
 
-        self.xscrollbar = tk.Scrollbar(root, orient=tk.HORIZONTAL, command=self.on_x_scroll)  # TODO how do I set scroll limits and step size? (it must be possible, compare for using scrollbar in conjunction with treeview)
+        self.xscrollbar = tk.Scrollbar(root, orient=tk.HORIZONTAL, command=self.on_x_scroll)
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
         print(self.xscrollbar.keys())
         print(self.xscrollbar["relief"], self.xscrollbar["repeatdelay"], self.xscrollbar["repeatinterval"], self.xscrollbar.get())
@@ -190,7 +200,6 @@ class Viewer():
     def on_mouse_press(self, event):
         print('mouse press', event)
 
-        print((self.selection is not None), (event.state & 0x01 == 0x01), self.old_mouse_press_start)
         if (self.selection is not None) and (event.state & 0x01 == 0x01):  # shift pressed
             self.mouse_press_start = self.old_mouse_press_start  # if we start selecting a rectangle by moving the holded mouse to the right, then release the mouse button, and then press shift on a point left to the rectangle, the start point is needed because we do correct the actual selection rectangle so that end > start
             if self.mouse_press_start is not None:
@@ -250,6 +259,16 @@ class Viewer():
 
             self.adjust_selection(event)
             self.draw()
+
+    def on_mouse_wheel(self, event, delta):
+        print('mouse wheel', event, delta)
+        if event.state & 0x01 == 0x01:  # shift
+            self.xscroll_item = clip(self.xscroll_item + delta * 3, 0, self.xscroll_max)
+            self.scroll_x()
+        else:
+            self.yscroll_item = clip(self.yscroll_item + delta * 3, 0, self.yscroll_max)
+            self.scroll_y()
+        self.draw()
 
     def adjust_selection(self, event):
         hit_x = (event.x - self.row_heading_width) // self.cell_width + self.xscroll_item
