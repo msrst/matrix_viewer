@@ -17,12 +17,15 @@ def clip(value, min, max):
         return value
 
 class Viewer():
-    # TODO implement mouse wheel scroll
-    # TODO make scrollbars less weird (use page size for scroll nibble, resolve problem that causes an empty extra column)
     def __init__(self, matrix):
         self.matrix = matrix
 
-        self.font_size = 15
+        self.font_size = 12
+        self.cell_vpadding = 5
+        self.cell_hpadding = 5
+        self.background_color = "#ffffff"
+        self.heading_color = "#dddddd"
+        self.cell_outline_color = "#bbbbbb"
 
     def run(self):
         root  = tk.Tk()
@@ -40,11 +43,9 @@ class Viewer():
         root.rowconfigure(0, weight=1)
         root.columnconfigure(0, weight=1)
 
-        self.canvas1 = tk.Canvas(f1, width=20)
+        self.canvas1 = tk.Canvas(f1, width=20, bg=self.background_color)
 
         self.canvas1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        table_lines = np.array([10, 20, 300, 400, 30, 50, 330, 450])
-        self.canvas1.create_line(table_lines.tolist())
         # self.canvas1["scrollregion"] = [0, 0, 500, 1000]  # left, top, right, bottom corner of scrollable field
         self.canvas1.bind("<Configure>", self.on_resize)
 
@@ -68,36 +69,33 @@ class Viewer():
         self.float_formatter = "{:.6f}".format
         self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
 
-        self.cell_vpadding = 2
-        self.cell_hpadding = 2
+        self.column_heading_formatter = "{:d}".format
+        self.row_heading_formatter = "{:d}".format
+
         self.cell_height = self.font_size + self.cell_vpadding * 2
         self.cell_width = self.max_text_width + self.cell_hpadding * 2
-        self.row_heading_width = self.cell_font.measure(self.float_formatter(self.matrix.shape[0])) + self.cell_hpadding * 2
-        self.xscroll_items = self.matrix.shape[1] + 1
-        self.yscroll_items = self.matrix.shape[0] + 1
+        self.row_heading_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0])) - 1)) + self.cell_hpadding * 2
+        self.xscroll_items = self.matrix.shape[1]
+        self.yscroll_items = self.matrix.shape[0]
         self.xscroll_item = 0
         self.yscroll_item = 0
 
     def calc_size_scroll(self, init):
-        self.xscroll_max = max(self.xscroll_items - self.size_x // self.cell_width, 0)
-        if self.xscroll_max == 0:
-            if self.row_heading_width + self.xscroll_items * self.cell_width > self.size_x:
-                self.xscroll_max = 1  # if first column (the row headings) is larger than expected
-        elif self.xscroll_max == 1:
-            if self.row_heading_width + self.xscroll_items * self.cell_width <= self.size_x:
-                self.xscroll_max = 0  # if first column (the row headings) is smaller than expected
+        self.xscroll_page_size = (self.size_x - self.row_heading_width) // self.cell_width
+        self.xscroll_max = max(self.xscroll_items - self.xscroll_page_size, 0)
         self.xscroll_item = min(self.xscroll_item, self.xscroll_max)
         if self.xscroll_max == 0:
             self.xscrollbar.set(0, 1)
         else:
-            self.xscrollbar.set(self.xscroll_item / (self.xscroll_max + 1), (self.xscroll_item + 1) / (self.xscroll_max + 1))
+            self.xscrollbar.set(self.xscroll_item / self.xscroll_items, (self.xscroll_item + self.xscroll_page_size) / self.xscroll_items)
 
-        self.yscroll_max = max(self.yscroll_items - self.size_y // self.cell_height, 0)  # cell_height is equal to the heading height which facilitates yscroll calculations
+        self.yscroll_page_size = (self.size_y - self.cell_height) // self.cell_height
+        self.yscroll_max = max(self.yscroll_items - self.yscroll_page_size, 0)
         self.yscroll_item = min(self.yscroll_item, self.yscroll_max)
         if self.yscroll_max == 0:
             self.yscrollbar.set(0, 1)
         else:
-            self.yscrollbar.set(self.yscroll_item / (self.yscroll_max + 1), (self.yscroll_item + 1) / (self.yscroll_max + 1))
+            self.yscrollbar.set(self.yscroll_item / self.yscroll_items, (self.yscroll_item + self.yscroll_page_size) / self.yscroll_items)
 
     def on_x_scroll(self, *args):
         new_xscroll_item = None
@@ -105,15 +103,14 @@ class Viewer():
             if args[2] == 'units':
                 new_xscroll_item = clip(self.xscroll_item + int(args[1]), 0, self.xscroll_max)
             elif args[2] == 'pages':
-                items_per_page = self.size_x // self.cell_width
-                new_xscroll_item = clip(self.xscroll_item + int(args[1]) * items_per_page, 0, self.xscroll_max)
+                new_xscroll_item = clip(self.xscroll_item + int(args[1]) * self.xscroll_page_size, 0, self.xscroll_max)
         elif args[0] == 'moveto':
             desired_fraction = float(args[1])  # desired scroll position from 0 to 1
-            new_xscroll_item = clip(math.floor(desired_fraction * (self.xscroll_max + 1) + 0.5), 0, self.xscroll_max)
+            new_xscroll_item = clip(math.floor(desired_fraction * self.xscroll_items + 0.5), 0, self.xscroll_max)
 
         if (new_xscroll_item is not None) and (new_xscroll_item != self.xscroll_item):
             self.xscroll_item = new_xscroll_item
-            self.xscrollbar.set(self.xscroll_item / (self.xscroll_max + 1), (self.xscroll_item + 1) / (self.xscroll_max + 1))
+            self.xscrollbar.set(self.xscroll_item / self.xscroll_items, (self.xscroll_item + self.xscroll_page_size) / self.xscroll_items)
             self.draw()
 
     def on_y_scroll(self, *args):
@@ -122,15 +119,14 @@ class Viewer():
             if args[2] == 'units':
                 new_yscroll_item = clip(self.yscroll_item + int(args[1]), 0, self.yscroll_max)
             elif args[2] == 'pages':
-                items_per_page = self.size_y // self.cell_width
-                new_yscroll_item = clip(self.yscroll_item + int(args[1]) * items_per_page, 0, self.yscroll_max)
+                new_yscroll_item = clip(self.yscroll_item + int(args[1]) * self.yscroll_page_size, 0, self.yscroll_max)
         elif args[0] == 'moveto':
             desired_fraction = float(args[1])  # desired scroll position from 0 to 1
-            new_yscroll_item = clip(math.floor(desired_fraction * (self.yscroll_max + 1) + 0.5), 0, self.yscroll_max)
+            new_yscroll_item = clip(math.floor(desired_fraction * self.yscroll_items + 0.5), 0, self.yscroll_max)
 
         if (new_yscroll_item is not None) and (new_yscroll_item != self.yscroll_item):
             self.yscroll_item = new_yscroll_item
-            self.yscrollbar.set(self.yscroll_item / (self.yscroll_max + 1), (self.yscroll_item + 1) / (self.yscroll_max + 1))
+            self.yscrollbar.set(self.yscroll_item / self.yscroll_items, (self.yscroll_item + self.yscroll_page_size) / self.yscroll_items)
             self.draw()
 
     def on_resize(self, event):
@@ -142,22 +138,50 @@ class Viewer():
     def draw(self):
         self.canvas1.delete('all')
 
-        x = self.cell_hpadding + self.row_heading_width + self.cell_width
-        x_items_per_page = self.size_x // self.cell_width
-        y_items_per_page = self.size_y // self.cell_height
-        current_x_item = self.xscroll_item
-        if current_x_item == 0:
-            current_x_item += 1   # TODO draw row headings
-        for i_column in range(current_x_item, min(current_x_item + x_items_per_page, self.matrix.shape[1] - 1)):
-            y = self.cell_vpadding * 3 + self.cell_height
-            current_y_item = self.yscroll_item
-            if current_y_item == 0:
-                current_y_item += 1  # TODO draw column headings
-            for i_row in range(current_y_item, min(current_y_item + y_items_per_page, self.matrix.shape[0] - 1)):
-                print(i_row, i_column, self.matrix.shape)
-                self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row, i_column]), font=self.cell_font, anchor='ne')
+        line_end_x = self.size_x - 1
+        line_end_y = self.size_y - 1
+        self.canvas1.create_rectangle(0, 0, line_end_x, self.cell_height, fill=self.heading_color, width=0)
+        self.canvas1.create_rectangle(0, 0, self.row_heading_width, line_end_y, fill=self.heading_color, width=0)
+
+        if (self.xscroll_page_size > 0) and (self.yscroll_page_size > 0):
+            table_lines = np.empty((self.xscroll_page_size + 2) * 4)
+            table_lines[::4] = self.row_heading_width
+            table_lines[1::8] = 0
+            table_lines[2::4] = self.row_heading_width
+            table_lines[3::8] = line_end_y
+            if len(table_lines) > 4:
+                table_lines[4::4] = self.row_heading_width + np.arange(self.xscroll_page_size + 1) * self.cell_width
+                table_lines[5::8] = line_end_y
+                table_lines[6::4] = self.row_heading_width + np.arange(self.xscroll_page_size + 1) * self.cell_width
+                table_lines[7::8] = 0
+                self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
+
+            table_lines = np.empty((self.yscroll_page_size + 2) * 4)
+            table_lines[::8] = 0
+            table_lines[1::4] = np.arange(self.yscroll_page_size + 2) * self.cell_height
+            table_lines[2::8] = line_end_x
+            table_lines[3::4] = np.arange(self.yscroll_page_size + 2) * self.cell_height
+            if len(table_lines) > 4:
+                table_lines[4::8] = line_end_x
+                table_lines[6::8] = 0
+                self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
+
+            x = -self.cell_hpadding + self.row_heading_width
+            y = self.cell_vpadding + self.cell_height
+            for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
+                self.canvas1.create_text(x, y, text=self.row_heading_formatter(i_row), font=self.cell_font, anchor='ne')
                 y += self.cell_height
             x += self.cell_width
+
+            for i_column in range(self.xscroll_item, min(self.xscroll_item + self.xscroll_page_size + 1, self.xscroll_items)):
+                y = self.cell_vpadding
+                self.canvas1.create_text(x - self.max_text_width // 2, y, text=self.column_heading_formatter(i_column), font=self.cell_font, anchor='n')
+                y += self.cell_height
+
+                for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
+                    self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row, i_column]), font=self.cell_font, anchor='ne')
+                    y += self.cell_height
+                x += self.cell_width
 
 def helo(matrix):
     viewer = Viewer(matrix)
