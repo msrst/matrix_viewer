@@ -10,6 +10,7 @@ import math
 import time
 import os
 import platform
+from . import manager
 
 from numpy.lib.function_base import select
 
@@ -22,7 +23,7 @@ def clip(value, min, max):
         return value
 
 class Viewer():
-    def __init__(self, matrix):
+    def __init__(self, matrix, title="Matrix Viewer", matrix_title=None):
         self.matrix = matrix
 
         self.font_size = 12
@@ -37,21 +38,24 @@ class Viewer():
         self.selection_color = "#bbbbff"
         self.autoscroll_delay = 0.1  # in seconds
 
-    def run(self):
-        root  = tk.Tk()
-        root.title('Matrix Viewer')
-        root.geometry('500x500')
-        root['bg'] = '#AC99F2'
+        self.window  = tk.Tk()
+        self.window.title(title)
+        self.window.geometry('500x500')
+        self.window['bg'] = '#AC99F2'
 
         self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
         self.calc_dimensions()
 
-        f1 = tk.Frame(root)
-        f2 = tk.Frame(root)
+        self.paned = ttk.Notebook(self.window)
+        f1 = tk.Frame(self.paned)
+        if matrix_title is None:
+            matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
+        self.paned.add(f1, text=matrix_title)
+        f2 = tk.Frame(self.window)
 
-        f1.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
-        root.rowconfigure(0, weight=1)
-        root.columnconfigure(0, weight=1)
+        self.paned.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
+        self.window.rowconfigure(0, weight=1)
+        self.window.columnconfigure(0, weight=1)
 
         self.canvas1 = tk.Canvas(f1, width=20, bg=self.background_color)
 
@@ -70,7 +74,7 @@ class Viewer():
         else: # Mac (untested, sorry I have no Mac)
             self.canvas1.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, event.delta))
 
-        self.xscrollbar = tk.Scrollbar(root, orient=tk.HORIZONTAL, command=self.on_x_scroll)
+        self.xscrollbar = tk.Scrollbar(self.window, orient=tk.HORIZONTAL, command=self.on_x_scroll)
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
         print(self.xscrollbar.keys())
         print(self.xscrollbar["relief"], self.xscrollbar["repeatdelay"], self.xscrollbar["repeatinterval"], self.xscrollbar.get())
@@ -80,13 +84,51 @@ class Viewer():
         f2.grid(column=0, row=2, sticky="n")
         tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
         tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-        tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
 
-        root.mainloop()
+        f3 = tk.Frame(self.paned)
+        self.paned.add(f3)
+        but = tk.Button(f3, text="DAT BUTTON IS IN PANED").pack(side=tk.LEFT)
+
+        self._event_loop_id = None
+        self._destroyed = False
+        self.window.bind("<Destroy>", self.destroy)  # this will fire multiple times on destroy
+        manager.register(self)
+
+    def show(self, block=True):
+        if block:
+            self.window.mainloop()
+        else:
+            pass
+
+    def pause(self, timeout):
+        # timeout: in seconds
+
+        milliseconds = int(1000 * timeout)
+        if milliseconds > 0:
+            self._event_loop_id = self.window.after(milliseconds, self.stop_event_loop)
+        else:
+            self._event_loop_id = self.window.after_idle(self.stop_event_loop)
+
+        self.window.mainloop()
+
+    def stop_event_loop(self):
+        if self._event_loop_id:
+            self.window.after_cancel(self._event_loop_id)
+            self._event_loop_id = None
+        self.window.quit()
+
+    def destroy(self, *args):
+        print("destroy")
+        if not self._destroyed:
+            if self._event_loop_id:
+                self.window.after_cancel(self._event_loop_id)
+            manager.unregister(self)
+            self._destroyed = True
 
     def calc_dimensions(self):
         # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
         # (e.g. integer / floating point format, exp format vs. 0.00000)
+        # TODO check how to handle complex numbers
         self.float_formatter = "{:.6f}".format
         self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
 
@@ -373,125 +415,34 @@ class Viewer():
                         width=self.selection_border_width, fill=self.selection_border_color,
                     )  # bottom border line
 
-def helo(matrix):
+def view(matrix):
     viewer = Viewer(matrix)
-    viewer.run()
+    return viewer
 
-def helo3(matrix):
-    root  = tk.Tk()
-    root.title('Matrix Viewer')
-    root.geometry('500x500')
-    root['bg'] = '#AC99F2'
+def show(block=True):
+    if len(manager.registered_viewers) > 0:
+        manager.any_viewer().show(block)
 
-    f1 = tk.Frame(root)
-    f2 = tk.Frame(root)
+def pause(timeout):
+    if len(manager.registered_viewers) > 0:
+        manager.any_viewer().pause(timeout)
+    else:
+        time.sleep(timeout)
 
-    f1.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
-    root.rowconfigure(0, weight=1)
-    root.columnconfigure(0, weight=1)
+def show_with_pyplot():
+    import matplotlib
+    import matplotlib.pyplot
 
-    canvas1 = tk.Canvas(f1, width=20)
+    show(block=False)
 
-    canvas1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    table_lines = np.array([10, 20, 300, 400, 30, 50, 330, 450])
-    canvas1.create_line(table_lines.tolist())
-    canvas1["scrollregion"] = [0, 0, 500, 1000]  # left, top, right, bottom corner of scrollable field
-
-    xscrollbar = tk.Scrollbar(root, orient=tk.HORIZONTAL, command=canvas1.xview)
-    xscrollbar.grid(column=0, rows=1, sticky="ew")
-    yscrollbar = tk.Scrollbar(f1, orient=tk.VERTICAL, command=canvas1.yview)
-    yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    canvas1["xscrollcommand"] = xscrollbar.set
-    canvas1["yscrollcommand"] = yscrollbar.set
-
-    font_size = 15
-    my_font = tk.font.Font(size=font_size, family="Helvetica")
-    float_formatter = "{:.6f}".format
-    text_width = my_font.measure(float_formatter(1234.5678)) + 5
-    y = 10
-    for i_row in range(matrix.shape[0]):
-        x = 10 + text_width
-        for i_column in range(matrix.shape[1]):
-            canvas1.create_text(x, y, text=float_formatter(matrix[i_row][i_column]), font=my_font, anchor='e')
-            x += text_width
-        y += font_size + 1
-
-    f2.grid(column=0, row=2, sticky="n")
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-
-    root.mainloop()
-
-def helo2():
-    # def killme():
-    #     root.quit()
-    #     root.destroy()
-
-    # root=tk.Tk()
-
-    # lb=tk.Text(root, width=16, height=5)
-
-    # lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=tk.YES)
-
-    # yscrollbar=tk.Scrollbar(root, orient=tk.VERTICAL, command=lb.yview)
-    # yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    # lb["yscrollcommand"]=yscrollbar.set
-
-    # root.mainloop()
-
-    root  = tk.Tk()
-    root.title('Matrix Viewer')
-    root.geometry('500x500')
-    root['bg'] = '#AC99F2'
-
-    f1 = tk.Frame(root)
-    f2 = tk.Frame(root)
-
-    f1.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
-    f2.grid(column=0, row=1, sticky="n")
-    root.rowconfigure(0, weight=1)
-    root.columnconfigure(0, weight=1)
-
-    data_table1 = ttk.Treeview(f1, height=50)
-
-    data_table1['columns'] = ('player_id', 'player_name', 'player_Rank', 'player_states', 'player_city')
-
-    data_table1.column("#0", width=0,  stretch=tk.NO)
-    data_table1.column("player_id",anchor=tk.CENTER, width=80)
-    data_table1.column("player_name",anchor=tk.CENTER,width=80)
-    data_table1.column("player_Rank",anchor=tk.CENTER,width=80)
-    data_table1.column("player_states",anchor=tk.CENTER,width=80)
-    data_table1.column("player_city",anchor=tk.CENTER,width=80)
-
-    data_table1.heading("#0",text="",anchor=tk.CENTER)
-    data_table1.heading("player_id",text="Id",anchor=tk.CENTER)
-    data_table1.heading("player_name",text="Name",anchor=tk.CENTER)
-    data_table1.heading("player_Rank",text="Rank",anchor=tk.CENTER)
-    data_table1.heading("player_states",text="States",anchor=tk.CENTER)
-    data_table1.heading("player_city",text="States",anchor=tk.CENTER)
-
-    data_table1.insert(parent='',index='end',iid=0,text='',
-    values=('1','Ninja','101','Oklahoma', 'Moore'))
-    data_table1.insert(parent='',index='end',iid=1,text='',
-    values=('2','Ranger','102','Wisconsin', 'Green Bay'))
-    data_table1.insert(parent='',index='end',iid=2,text='',
-    values=('3','Deamon','103', 'California', 'Placentia'))
-    data_table1.insert(parent='',index='end',iid=3,text='',
-    values=('4','Dragon','104','New York' , 'White Plains'))
-    data_table1.insert(parent='',index='end',iid=4,text='',
-    values=('5','CrissCross','105','California', 'San Diego'))
-    data_table1.insert(parent='',index='end',iid=5,text='',
-    values=('6','ZaqueriBlack','106','Wisconsin' , 'TONY'))
-
-    data_table1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-    yscrollbar = tk.Scrollbar(f1, orient=tk.VERTICAL, command=data_table1.yview)
-    yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    data_table1["yscrollcommand"] = yscrollbar.set
-
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-    tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-
-    root.mainloop()
+    if matplotlib.get_backend() == 'TkAgg':
+        matplotlib.pyplot.show()  # this will also show matrix_viewer windows because matplotlib is also using tkinter
+        if len(manager.registered_viewers) > 0:  # pyplot.show() returns if all pyplot figures were closed
+            show()  # Therefore, we have to wait until all matrix_viewer windows are closed, too
+    else:
+        matplotlib.pyplot.show(block=False)
+        # this implementation is a bit laggy, eventually there is a better one
+        while (len(manager.registered_viewers) > 0) or (len(matplotlib.pyplot.get_fignums()) > 0):
+            # run both event loops in sequence, fast enough for acceptable delay
+            pause(0.02)
+            matplotlib.pyplot.pause(0.02)
