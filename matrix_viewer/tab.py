@@ -2,29 +2,18 @@
 import tkinter as tk
 import tkinter.font
 import tkinter.ttk as ttk
-import matplotlib
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.figure
 import math
 import time
 import os
 import platform
 from . import manager
+from .utils import clip
 
-from numpy.lib.function_base import select
-
-def clip(value, min, max):
-    if value < min:
-        return min
-    elif value > max:
-        return max
-    else:
-        return value
-
-class Viewer():
-    def __init__(self, matrix, title="Matrix Viewer", matrix_title=None):
+class ViewerTab():
+    def __init__(self, viewer, matrix, matrix_title=None):
         self.matrix = matrix
+        self.viewer = viewer
 
         self.font_size = 12
         self.cell_vpadding = 5
@@ -38,33 +27,36 @@ class Viewer():
         self.selection_color = "#bbbbff"
         self.autoscroll_delay = 0.1  # in seconds
 
-        self.window  = tk.Tk()
-        self.window.title(title)
-        self.window.geometry('500x500')
-        self.window['bg'] = '#AC99F2'
-
         self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
         self.calc_dimensions()
 
-        self.paned = ttk.Notebook(self.window)
-        f1 = tk.Frame(self.paned)
+        # f3 = tk.Frame(self.viewer.paned, bg='#0000ff')
+        # self.viewer.paned.add(f3, text="testo2")
+        # canvas2 = tk.Frame(f3, bg=self.background_color)
+        # canvas2.grid(column=0, row=0, sticky="nsew")
+        # f3.rowconfigure(0, weight=1)
+        # f3.columnconfigure(0, weight=1)
+        # but2 = tk.Button(f3, text="DAT BUTTON IS IN PANED testo2")
+        # but2.grid(column=0, row=1)
+
+        f1 = tk.Frame(self.viewer.paned)
         if matrix_title is None:
             matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
-        self.paned.add(f1, text=matrix_title)
-        f2 = tk.Frame(self.window)
+        self.viewer.paned.add(f1, text=matrix_title)
+        print('added tab with', matrix_title)
 
-        self.paned.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
-        self.window.rowconfigure(0, weight=1)
-        self.window.columnconfigure(0, weight=1)
-
-        self.canvas1 = tk.Canvas(f1, width=20, bg=self.background_color)
+        f1a = tk.Frame(f1)
+        f1a.grid(column=0, row=0, sticky="nsew")
+        f1.rowconfigure(0, weight=1)
+        f1.columnconfigure(0, weight=1)
+        self.canvas1 = tk.Canvas(f1a, bg=self.background_color)
 
         self.canvas1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        # self.canvas1["scrollregion"] = [0, 0, 500, 1000]  # left, top, right, bottom corner of scrollable field
         self.canvas1.bind("<Configure>", self.on_resize)
         self.canvas1.bind("<ButtonPress-1>", self.on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self.on_mouse_release)
         self.canvas1.bind("<Motion>", self.on_mouse_motion)
+
         # see https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar#17457843
         if platform.system() == "Linux":
             self.canvas1.bind_all("<Button-4>", lambda event: self.on_mouse_wheel(event, -1))
@@ -74,56 +66,12 @@ class Viewer():
         else: # Mac (untested, sorry I have no Mac)
             self.canvas1.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, event.delta))
 
-        self.xscrollbar = tk.Scrollbar(self.window, orient=tk.HORIZONTAL, command=self.on_x_scroll)
+        self.xscrollbar = tk.Scrollbar(f1, orient=tk.HORIZONTAL, command=self.on_x_scroll)
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
         print(self.xscrollbar.keys())
         print(self.xscrollbar["relief"], self.xscrollbar["repeatdelay"], self.xscrollbar["repeatinterval"], self.xscrollbar.get())
-        self.yscrollbar = tk.Scrollbar(f1, orient=tk.VERTICAL, command=self.on_y_scroll)
+        self.yscrollbar = tk.Scrollbar(f1a, orient=tk.VERTICAL, command=self.on_y_scroll)
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        f2.grid(column=0, row=2, sticky="n")
-        tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-        tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-
-        f3 = tk.Frame(self.paned)
-        self.paned.add(f3)
-        but = tk.Button(f3, text="DAT BUTTON IS IN PANED").pack(side=tk.LEFT)
-
-        self._event_loop_id = None
-        self._destroyed = False
-        self.window.bind("<Destroy>", self.destroy)  # this will fire multiple times on destroy
-        manager.register(self)
-
-    def show(self, block=True):
-        if block:
-            self.window.mainloop()
-        else:
-            pass
-
-    def pause(self, timeout):
-        # timeout: in seconds
-
-        milliseconds = int(1000 * timeout)
-        if milliseconds > 0:
-            self._event_loop_id = self.window.after(milliseconds, self.stop_event_loop)
-        else:
-            self._event_loop_id = self.window.after_idle(self.stop_event_loop)
-
-        self.window.mainloop()
-
-    def stop_event_loop(self):
-        if self._event_loop_id:
-            self.window.after_cancel(self._event_loop_id)
-            self._event_loop_id = None
-        self.window.quit()
-
-    def destroy(self, *args):
-        print("destroy")
-        if not self._destroyed:
-            if self._event_loop_id:
-                self.window.after_cancel(self._event_loop_id)
-            manager.unregister(self)
-            self._destroyed = True
 
     def calc_dimensions(self):
         # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
@@ -414,35 +362,3 @@ class Viewer():
                     self.canvas1.create_line(selection_x0, selection_y1, selection_x1, selection_y1,
                         width=self.selection_border_width, fill=self.selection_border_color,
                     )  # bottom border line
-
-def view(matrix):
-    viewer = Viewer(matrix)
-    return viewer
-
-def show(block=True):
-    if len(manager.registered_viewers) > 0:
-        manager.any_viewer().show(block)
-
-def pause(timeout):
-    if len(manager.registered_viewers) > 0:
-        manager.any_viewer().pause(timeout)
-    else:
-        time.sleep(timeout)
-
-def show_with_pyplot():
-    import matplotlib
-    import matplotlib.pyplot
-
-    show(block=False)
-
-    if matplotlib.get_backend() == 'TkAgg':
-        matplotlib.pyplot.show()  # this will also show matrix_viewer windows because matplotlib is also using tkinter
-        if len(manager.registered_viewers) > 0:  # pyplot.show() returns if all pyplot figures were closed
-            show()  # Therefore, we have to wait until all matrix_viewer windows are closed, too
-    else:
-        matplotlib.pyplot.show(block=False)
-        # this implementation is a bit laggy, eventually there is a better one
-        while (len(manager.registered_viewers) > 0) or (len(matplotlib.pyplot.get_fignums()) > 0):
-            # run both event loops in sequence, fast enough for acceptable delay
-            pause(0.02)
-            matplotlib.pyplot.pause(0.02)
