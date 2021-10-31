@@ -48,13 +48,10 @@ class ViewerTab():
         f1a.grid(column=0, row=0, sticky="nsew")
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.columnconfigure(0, weight=1)
-        self.canvas1 = tk.Canvas(f1a, bg=self.background_color)
+        self.canvas1 = tk.Canvas(f1a, width=20, bg=self.background_color)
 
         self.canvas1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.canvas1.bind("<Configure>", self.on_resize)
-        self.canvas1.bind("<ButtonPress-1>", self.on_mouse_press)
-        self.canvas1.bind("<ButtonRelease-1>", self.on_mouse_release)
-        self.canvas1.bind("<Motion>", self.on_mouse_motion)
 
         # see https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar#17457843
         if platform.system() == "Linux":
@@ -175,69 +172,6 @@ class ViewerTab():
                 else:
                     return None, None
 
-    def on_mouse_press(self, event):
-        print('mouse press', event)
-
-        if (self.selection is not None) and (event.state & 0x01 == 0x01):  # shift pressed
-            self.mouse_press_start = self.old_mouse_press_start  # if we start selecting a rectangle by moving the holded mouse to the right, then release the mouse button, and then press shift on a point left to the rectangle, the start point is needed because we do correct the actual selection rectangle so that end > start
-            if self.mouse_press_start is not None:
-                self.adjust_selection(event)
-        else:
-            self.mouse_press_start = None
-            hit_x, hit_y = self.calc_hit_cell(event.x, event.y)
-
-            if hit_x is None:
-                self.selection = None
-                self.focused_cell = None
-            elif (hit_x == -1) and (hit_y == -1):
-                self.selection = [0, 0, self.xscroll_items, self.yscroll_items]
-            elif hit_x == -1:
-                self.selection = [0, hit_y, self.xscroll_items, hit_y + 1]
-                self.focused_cell = [0, hit_y]
-                self.mouse_press_start = [-1, hit_y]
-            elif hit_y == -1:
-                self.selection = [hit_x, 0, hit_x + 1, self.yscroll_items]
-                self.focused_cell = [hit_x, 0]
-                self.mouse_press_start = [hit_x, -1]
-            else:
-                self.selection = [hit_x, hit_y, hit_x + 1, hit_y + 1]
-                self.focused_cell = [hit_x, hit_y]
-                self.mouse_press_start = [hit_x, hit_y]
-
-        self.draw()
-
-    def on_mouse_release(self, event):
-        print('mouse release', event)
-        self.old_mouse_press_start = self.mouse_press_start
-        self.mouse_press_start = None
-
-    def on_mouse_motion(self, event):
-        if self.mouse_press_start is not None:
-            current_time = time.time()
-            if self.last_autoscroll_time < current_time - self.autoscroll_delay:
-                if self.mouse_press_start[0] != -1:
-                    if event.x < self.row_heading_width:
-                        self.xscroll_item = max(self.xscroll_item - 1, 0)
-                        self.scroll_x()
-                        self.last_autoscroll_time = current_time
-                    elif event.x > self.row_heading_width + self.xscroll_page_size * self.cell_width:
-                        self.xscroll_item = min(self.xscroll_item + 1, self.xscroll_max)
-                        self.scroll_x()
-                        self.last_autoscroll_time = current_time
-
-                if self.mouse_press_start[1] != -1:
-                    if event.y < self.cell_height:
-                        self.yscroll_item = max(self.yscroll_item - 1, 0)
-                        self.scroll_y()
-                        self.last_autoscroll_time = current_time
-                    elif event.y > self.cell_height + self.yscroll_page_size * self.cell_height:
-                        self.yscroll_item = min(self.yscroll_item + 1, self.yscroll_max)
-                        self.scroll_y()
-                        self.last_autoscroll_time = current_time
-
-            self.adjust_selection(event)
-            self.draw()
-
     def on_mouse_wheel(self, event, delta):
         print('mouse wheel', event, delta)
         if event.state & 0x01 == 0x01:  # shift
@@ -295,46 +229,47 @@ class ViewerTab():
             # re-fill the focused cell with white color so that it is better distinguishable from the selection
             self.canvas1.create_rectangle(focused_x0, focused_y0, focused_x0 + self.cell_width, focused_y0 + self.cell_height, width=0, fill=self.background_color)
 
-        if (self.xscroll_page_size > 0) and (self.yscroll_page_size > 0):
-            # vertical lines
-            table_lines = np.empty((self.xscroll_page_size + 2) * 4)
-            table_lines[::4] = self.row_heading_width
-            table_lines[1::8] = 0
-            table_lines[2::4] = self.row_heading_width
-            table_lines[3::8] = line_end_y
-            if len(table_lines) > 4:
-                table_lines[4::4] = self.row_heading_width + np.arange(self.xscroll_page_size + 1) * self.cell_width
-                table_lines[5::8] = line_end_y
-                table_lines[6::4] = self.row_heading_width + np.arange(self.xscroll_page_size + 1) * self.cell_width
-                table_lines[7::8] = 0
-                self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
+        # vertical lines
+        num_vertical_lines = min(self.xscroll_page_size, self.xscroll_items - self.xscroll_item) + 2
+        table_lines = np.empty(num_vertical_lines * 4)
+        table_lines[::4] = self.row_heading_width
+        table_lines[1::8] = 0
+        table_lines[2::4] = self.row_heading_width
+        table_lines[3::8] = line_end_y
+        if len(table_lines) > 4:
+            table_lines[4::4] = self.row_heading_width + np.arange(num_vertical_lines - 1) * self.cell_width
+            table_lines[5::8] = line_end_y
+            table_lines[6::4] = self.row_heading_width + np.arange(num_vertical_lines - 1) * self.cell_width
+            table_lines[7::8] = 0
+            self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
 
-            # horizontal lines
-            table_lines = np.empty((self.yscroll_page_size + 2) * 4)
-            table_lines[::8] = 0
-            table_lines[1::4] = np.arange(self.yscroll_page_size + 2) * self.cell_height
-            table_lines[2::8] = line_end_x
-            table_lines[3::4] = np.arange(self.yscroll_page_size + 2) * self.cell_height
-            if len(table_lines) > 4:
-                table_lines[4::8] = line_end_x
-                table_lines[6::8] = 0
-                self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
+        # horizontal lines
+        num_horizontal_lines = min(self.yscroll_page_size, self.yscroll_items - self.yscroll_item) + 2
+        table_lines = np.empty(num_horizontal_lines * 4)
+        table_lines[::8] = 0
+        table_lines[1::4] = np.arange(num_horizontal_lines) * self.cell_height
+        table_lines[2::8] = line_end_x
+        table_lines[3::4] = np.arange(num_horizontal_lines) * self.cell_height
+        if len(table_lines) > 4:
+            table_lines[4::8] = line_end_x
+            table_lines[6::8] = 0
+            self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
 
-            self.draw_cells()
+        self.draw_cells()
 
-            if self.selection is not None:
-                if (selection_x0 != selection_x1) and (selection_y0 != selection_y1):
-                    if self.selection[0] >= self.xscroll_item:
-                        self.canvas1.create_line(selection_x0, selection_y0, selection_x0, selection_y1,
-                            width=self.selection_border_width, fill=self.selection_border_color
-                        )  # left border line
-                    self.canvas1.create_line(selection_x1, selection_y0, selection_x1, selection_y1,
+        if self.selection is not None:
+            if (selection_x0 != selection_x1) and (selection_y0 != selection_y1):
+                if self.selection[0] >= self.xscroll_item:
+                    self.canvas1.create_line(selection_x0, selection_y0, selection_x0, selection_y1,
                         width=self.selection_border_width, fill=self.selection_border_color
-                    )  # right border line
-                    if self.selection[1] >= self.yscroll_item:
-                        self.canvas1.create_line(selection_x0, selection_y0, selection_x1, selection_y0,
-                            width=self.selection_border_width, fill=self.selection_border_color,
-                        )  # top border line
-                    self.canvas1.create_line(selection_x0, selection_y1, selection_x1, selection_y1,
+                    )  # left border line
+                self.canvas1.create_line(selection_x1, selection_y0, selection_x1, selection_y1,
+                    width=self.selection_border_width, fill=self.selection_border_color
+                )  # right border line
+                if self.selection[1] >= self.yscroll_item:
+                    self.canvas1.create_line(selection_x0, selection_y0, selection_x1, selection_y0,
                         width=self.selection_border_width, fill=self.selection_border_color,
-                    )  # bottom border line
+                    )  # top border line
+                self.canvas1.create_line(selection_x0, selection_y1, selection_x1, selection_y1,
+                    width=self.selection_border_width, fill=self.selection_border_color,
+                )  # bottom border line
