@@ -39,8 +39,6 @@ class ViewerTabNumpy(ViewerTab):
         self.canvas1.bind("<Motion>", self.on_mouse_motion)
 
     def on_mouse_press(self, event):
-        print('mouse press', event)
-
         if (self.selection is not None) and (event.state & 0x01 == 0x01):  # shift pressed
             self.mouse_press_start = self.old_mouse_press_start  # if we start selecting a rectangle by moving the holded mouse to the right, then release the mouse button, and then press shift on a point left to the rectangle, the start point is needed because we do correct the actual selection rectangle so that end > start
             if self.mouse_press_start is not None:
@@ -70,7 +68,6 @@ class ViewerTabNumpy(ViewerTab):
         self.draw()
 
     def on_mouse_release(self, event):
-        print('mouse release', event)
         self.old_mouse_press_start = self.mouse_press_start
         self.mouse_press_start = None
 

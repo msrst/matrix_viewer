@@ -1,7 +1,10 @@
 
 import numpy as np
 import tkinter as tk
+
+from numpy.lib.arraysetops import isin
 from .tab import ViewerTab
+from .utils import max_or_value
 
 class ViewerTabStruct(ViewerTab):
     def __init__(self, viewer, object, title=None):
@@ -13,10 +16,10 @@ class ViewerTabStruct(ViewerTab):
         default_title = object.__class__.__name__
 
         # query all attributes associated with the object
-        if type(self.object) == set:
+        if type(self.object) in (set, tuple):
             self.object_attributes = list(("", value) for value in self.object)
             self.row_heading_heading = ""
-            default_title = f"set with {len(self.object)} elements"
+            default_title = f"{self.object.__class__.__name__} with {len(self.object)} elements"
         elif type(self.object) == list:
             self.object_attributes = list((str(i), value) for i, value in enumerate(self.object))
             self.row_heading_heading = ""
@@ -29,7 +32,7 @@ class ViewerTabStruct(ViewerTab):
             self.object_attributes = []
             for element_name in dir(self.object):
                 attr = getattr(self.object, element_name)
-                if not callable(attr):
+                if (not callable(attr)) and (element_name not in ["__dict__", "__doc__", "__module__", "__weakref__"]):
                     self.object_attributes.append((element_name, attr))
             self.row_heading_heading = "Name"
 
@@ -38,21 +41,29 @@ class ViewerTabStruct(ViewerTab):
         self.object_value_clickable = []
         for _, value in self.object_attributes:
             clickable = True
-            if type(value) in [str, int, float, bytes]:
+            if isinstance(value, (int, float)):  # also matches bool because bool is a subclass of int
                 value_string = str(value)
+                clickable = False
+            elif type(value) in [str, bytes]:
+                value_string = str(value)
+                if '\n' in value_string:
+                    value_string = f"multiline string with {len(value)} characters"
+                clickable = False
+            elif value is None:
+                value_string = "None"
                 clickable = False
             elif type(value) == np.ndarray:
                 value_string = f"{value.shape} {value.dtype} ndarray"
-            elif type(value) in [list, dict, set]:
+            elif type(value) in [list, dict, set, tuple]:
                 value_string = f"{value.__class__.__name__} with {len(value)} elements"
             else:
                 value_string = str(type(value))
-                clickable = True
             self.object_value_strings.append(value_string)
             self.object_value_clickable.append(clickable)
 
-        self.max_text_width = max(self.cell_font.measure(s) for s in self.object_value_strings)
-        self.row_heading_text_width = max(self.cell_font.measure(s[0]) for s in self.object_attributes)
+        self.max_text_width = max(self.cell_font.measure(s) for s in (self.object_value_strings + ['Value']))
+        row_headings = list(attr[0] for attr in self.object_attributes)
+        self.row_heading_text_width = max(self.cell_font.measure(s) for s in (row_headings + [self.row_heading_heading]))
 
         if title is None:
             title = default_title
@@ -69,9 +80,10 @@ class ViewerTabStruct(ViewerTab):
 
         if (hit_x is not None) and (hit_x != -1) and (hit_y != -1):
             assert hit_x == 0
-            self.viewer.view(self.object_attributes[hit_y][1])
-            new_tab_index = self.viewer.paned.index('end') - 1  # assumes that the new tab is the last tab
-            self.viewer.paned.select(new_tab_index)  # go to the currently added tab
+            if self.object_value_clickable[hit_y]:
+                self.viewer.view(self.object_attributes[hit_y][1])
+                new_tab_index = self.viewer.paned.index('end') - 1  # assumes that the new tab is the last tab
+                self.viewer.paned.select(new_tab_index)  # go to the currently added tab
 
     def draw_cells(self):
         x = self.cell_hpadding

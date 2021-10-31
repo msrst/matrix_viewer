@@ -1,3 +1,9 @@
+# test file used during development
+
+import os
+import sys
+sys.path.append(os.getcwd())  # to be able to include matrix_viewer
+
 import matrix_viewer
 import numpy as np
 import matplotlib

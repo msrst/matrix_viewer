@@ -74,7 +74,6 @@ class Viewer():
     def unregister(self, tab):
         self.tabs.pop(self.tabs.index(tab))
         if len(self.tabs) == 0:
-            print('self destroy')
             self.window.destroy()  # close if all tabs were closed by the user
 
     def view(self, object):
@@ -86,11 +85,11 @@ class Viewer():
 def viewer(title="Matrix Viewer"):
     return Viewer(title)
 
-def view(matrix):
+def view(object):
     viewer = manager.last_viewer
     if viewer is None:
         viewer = Viewer()
-    return viewer.view(matrix)
+    return viewer.view(object)
 
 def show(block=True):
     if len(manager.registered_viewers) > 0:

@@ -42,7 +42,6 @@ class ViewerTab():
         self.top_frame = tk.Frame(self.viewer.paned)
         self.viewer.paned.add(self.top_frame, text=title)
         # self.viewer.paned.forget(self._tab_id)  -> remove tab
-        print('added tab with', title)
 
         f1a = tk.Frame(self.top_frame)
         f1a.grid(column=0, row=0, sticky="nsew")
@@ -173,7 +172,6 @@ class ViewerTab():
                     return None, None
 
     def on_mouse_wheel(self, event, delta):
-        print('mouse wheel', event, delta)
         if event.state & 0x01 == 0x01:  # shift
             self.xscroll_item = clip(self.xscroll_item + delta * 3, 0, self.xscroll_max)
             self.scroll_x()

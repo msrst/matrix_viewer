@@ -1,4 +1,5 @@
 # Config file for automatic testing at travis-ci.com
+# currently unused since GUI tests are difficult to automate, and this package is 99% GUI
 
 language: python
 python:
