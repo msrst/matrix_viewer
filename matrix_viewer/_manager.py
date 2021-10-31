@@ -1,5 +1,6 @@
 import tkinter as tk
 
+
 class ManagerSingleton:
     def __init__(self):
         self.registered_viewers = set()

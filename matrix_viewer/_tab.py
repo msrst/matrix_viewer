@@ -1,7 +1,6 @@
 
 import tkinter as tk
 import tkinter.font
-import tkinter.ttk as ttk
 import numpy as np
 import math
 import platform
@@ -56,7 +55,7 @@ class ViewerTab():
             self.canvas1.bind_all("<Button-5>", lambda event: self._on_mouse_wheel(event, 1))
         elif platform.system() == "Windows":
             self.canvas1.bind_all("<MouseWheel>", lambda event: self._on_mouse_wheel(event, -event.delta // 120))
-        else: # Mac (untested, sorry I have no Mac)
+        else:  # Mac (untested, sorry I have no Mac)
             self.canvas1.bind_all("<MouseWheel>", lambda event: self._on_mouse_wheel(event, event.delta))
 
         self.xscrollbar = tk.Scrollbar(self.top_frame, orient=tk.HORIZONTAL, command=self._on_x_scroll)

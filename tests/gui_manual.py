@@ -10,6 +10,7 @@ import numpy as np
 import matrix_viewer
 import matplotlib
 
+
 def open_with_pyplot(backend='TkAgg'):
     import matplotlib.pyplot as plt
     matplotlib.use(backend)

@@ -1,12 +1,12 @@
 
 import tkinter as tk
-import tkinter.ttk as ttk
 import numpy as np
 import time
 from ._manager import manager
 from ._tab_numpy import ViewerTabNumpy
 from ._tab_struct import ViewerTabStruct
 from ._custom_notebook import CustomNotebook
+
 
 class Viewer():
     """Class representing a matrix viewer window."""

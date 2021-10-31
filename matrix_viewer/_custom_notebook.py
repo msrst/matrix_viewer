@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from ._manager import manager
 
+
 class CustomNotebook(ttk.Notebook):
     """A ttk Notebook with close buttons on each tab"""
 
@@ -39,7 +40,7 @@ class CustomNotebook(ttk.Notebook):
         if not self.instate(['pressed']):
             return
 
-        element =  self.identify(event.x, event.y)
+        element = self.identify(event.x, event.y)
         if "close" not in element:
             # user moved the mouse off of the close button
             return
@@ -73,8 +74,8 @@ class CustomNotebook(ttk.Notebook):
         )
 
         style.element_create("close", "image", "img_close",
-                            ("active", "pressed", "!disabled", "img_closepressed"),
-                            ("active", "!disabled", "img_closeactive"), border=8, sticky='')
+                             ("active", "pressed", "!disabled", "img_closepressed"),
+                             ("active", "!disabled", "img_closeactive"), border=8, sticky='')
 
         style.layout("CustomNotebook", [("CustomNotebook.client", {"sticky": "nswe"})])
         style.layout("CustomNotebook.Tab", [

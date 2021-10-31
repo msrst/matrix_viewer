@@ -2,9 +2,8 @@
 import numpy as np
 import tkinter as tk
 
-from numpy.lib.arraysetops import isin
 from ._tab import ViewerTab
-from ._utils import max_or_value
+
 
 class ViewerTabStruct(ViewerTab):
     """A viewer tab that can be used to visualize a class, list, dict and some other container types."""

@@ -1,8 +1,6 @@
 
 import tkinter as tk
 import tkinter.font
-import tkinter.ttk as ttk
-import numpy as np
 import time
 
 from ._tab import ViewerTab
