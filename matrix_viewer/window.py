@@ -12,7 +12,8 @@ import os
 import platform
 from .manager import manager
 from .utils import clip
-from .tab import ViewerTab
+from .tab_numpy import ViewerTabNumpy
+from .tab_struct import ViewerTabStruct
 from .custom_notebook import CustomNotebook
 
 class Viewer():
@@ -76,6 +77,12 @@ class Viewer():
             print('self destroy')
             self.window.destroy()  # close if all tabs were closed by the user
 
+    def view(self, object):
+        if type(object) == np.ndarray:
+            return ViewerTabNumpy(self, object)
+        else:
+            return ViewerTabStruct(self, object)
+
 def viewer(title="Matrix Viewer"):
     return Viewer(title)
 
@@ -83,8 +90,7 @@ def view(matrix):
     viewer = manager.last_viewer
     if viewer is None:
         viewer = Viewer()
-    viewer_tab = ViewerTab(viewer, matrix)
-    return viewer_tab
+    return viewer.view(matrix)
 
 def show(block=True):
     if len(manager.registered_viewers) > 0:

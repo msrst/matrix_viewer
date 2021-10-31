@@ -12,11 +12,11 @@ from . import manager
 from .utils import clip
 
 class ViewerTab():
-    def __init__(self, viewer, matrix, matrix_title=None):
-        self.matrix = matrix
+    def __init__(self, viewer, title, num_columns, num_rows):
         self.viewer = viewer
+        self.xscroll_items = num_columns
+        self.yscroll_items = num_rows
 
-        self.font_size = 12
         self.cell_vpadding = 5
         self.cell_hpadding = 5
         self.background_color = "#ffffff"
@@ -28,7 +28,6 @@ class ViewerTab():
         self.selection_color = "#bbbbff"
         self.autoscroll_delay = 0.1  # in seconds
 
-        self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
         self.calc_dimensions()
 
         # f3 = tk.Frame(self.viewer.paned, bg='#0000ff')
@@ -41,11 +40,9 @@ class ViewerTab():
         # but2.grid(column=0, row=1)
 
         self.top_frame = tk.Frame(self.viewer.paned)
-        if matrix_title is None:
-            matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
-        self.viewer.paned.add(self.top_frame, text=matrix_title)
+        self.viewer.paned.add(self.top_frame, text=title)
         # self.viewer.paned.forget(self._tab_id)  -> remove tab
-        print('added tab with', matrix_title)
+        print('added tab with', title)
 
         f1a = tk.Frame(self.top_frame)
         f1a.grid(column=0, row=0, sticky="nsew")
@@ -76,20 +73,9 @@ class ViewerTab():
         self.viewer.register(self)
 
     def calc_dimensions(self):
-        # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
-        # (e.g. integer / floating point format, exp format vs. 0.00000)
-        # TODO check how to handle complex numbers
-        self.float_formatter = "{:.6f}".format
-        self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
-
-        self.column_heading_formatter = "{:d}".format
-        self.row_heading_formatter = "{:d}".format
-
+        self.row_heading_width = self.row_heading_text_width + self.cell_hpadding * 2
         self.cell_height = self.font_size + self.cell_vpadding * 2
         self.cell_width = self.max_text_width + self.cell_hpadding * 2
-        self.row_heading_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1)))) + self.cell_hpadding * 2
-        self.xscroll_items = self.matrix.shape[1]
-        self.yscroll_items = self.matrix.shape[0]
         self.xscroll_item = 0
         self.yscroll_item = 0
 
@@ -334,22 +320,7 @@ class ViewerTab():
                 table_lines[6::8] = 0
                 self.canvas1.create_line(table_lines.tolist(), fill=self.cell_outline_color)
 
-            x = -self.cell_hpadding + self.row_heading_width
-            y = self.cell_vpadding + self.cell_height
-            for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
-                self.canvas1.create_text(x, y, text=self.row_heading_formatter(i_row), font=self.cell_font, anchor='ne')
-                y += self.cell_height
-            x += self.cell_width
-
-            for i_column in range(self.xscroll_item, min(self.xscroll_item + self.xscroll_page_size + 1, self.xscroll_items)):
-                y = self.cell_vpadding
-                self.canvas1.create_text(x - self.max_text_width // 2, y, text=self.column_heading_formatter(i_column), font=self.cell_font, anchor='n')
-                y += self.cell_height
-
-                for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
-                    self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row, i_column]), font=self.cell_font, anchor='ne')
-                    y += self.cell_height
-                x += self.cell_width
+            self.draw_cells()
 
             if self.selection is not None:
                 if (selection_x0 != selection_x1) and (selection_y0 != selection_y1):
