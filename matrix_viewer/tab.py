@@ -7,6 +7,7 @@ import math
 import time
 import os
 import platform
+
 from . import manager
 from .utils import clip
 
@@ -39,16 +40,17 @@ class ViewerTab():
         # but2 = tk.Button(f3, text="DAT BUTTON IS IN PANED testo2")
         # but2.grid(column=0, row=1)
 
-        f1 = tk.Frame(self.viewer.paned)
+        self.top_frame = tk.Frame(self.viewer.paned)
         if matrix_title is None:
             matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
-        self.viewer.paned.add(f1, text=matrix_title)
+        self._tab_id = self.viewer.paned.add(self.top_frame, text=matrix_title)
+        # self.viewer.paned.forget(self._tab_id)  -> remove tab
         print('added tab with', matrix_title)
 
-        f1a = tk.Frame(f1)
+        f1a = tk.Frame(self.top_frame)
         f1a.grid(column=0, row=0, sticky="nsew")
-        f1.rowconfigure(0, weight=1)
-        f1.columnconfigure(0, weight=1)
+        self.top_frame.rowconfigure(0, weight=1)
+        self.top_frame.columnconfigure(0, weight=1)
         self.canvas1 = tk.Canvas(f1a, bg=self.background_color)
 
         self.canvas1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -66,12 +68,14 @@ class ViewerTab():
         else: # Mac (untested, sorry I have no Mac)
             self.canvas1.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, event.delta))
 
-        self.xscrollbar = tk.Scrollbar(f1, orient=tk.HORIZONTAL, command=self.on_x_scroll)
+        self.xscrollbar = tk.Scrollbar(self.top_frame, orient=tk.HORIZONTAL, command=self.on_x_scroll)
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
-        print(self.xscrollbar.keys())
-        print(self.xscrollbar["relief"], self.xscrollbar["repeatdelay"], self.xscrollbar["repeatinterval"], self.xscrollbar.get())
         self.yscrollbar = tk.Scrollbar(f1a, orient=tk.VERTICAL, command=self.on_y_scroll)
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.top_frame.bind("<Destroy>", self.on_destroy)
+
+        self.viewer.register(self)
 
     def calc_dimensions(self):
         # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
@@ -259,6 +263,10 @@ class ViewerTab():
             self.yscroll_item = clip(self.yscroll_item + delta * 3, 0, self.yscroll_max)
             self.scroll_y()
         self.draw()
+
+    def on_destroy(self, event):
+        if event.widget == self.top_frame:
+            self.viewer.unregister(self)
 
     def adjust_selection(self, event):
         hit_x = (event.x - self.row_heading_width) // self.cell_width + self.xscroll_item

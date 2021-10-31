@@ -10,19 +10,19 @@ import math
 import time
 import os
 import platform
-from . import manager
+from .manager import manager
 from .utils import clip
 from .tab import ViewerTab
+from .custom_notebook import CustomNotebook
 
 class Viewer():
     def __init__(self, title="Matrix Viewer"):
-
-        self.window  = tk.Tk()
+        self.window  = tk.Toplevel(manager.get_or_create_root())
         self.window.title(title)
         self.window.geometry('500x500')
         self.window['bg'] = '#AC99F2'
 
-        self.paned = ttk.Notebook(self.window)
+        self.paned = CustomNotebook(self.window)
         f2 = tk.Frame(self.window)
 
         self.paned.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
@@ -35,39 +35,26 @@ class Viewer():
 
         self._event_loop_id = None
         self._destroyed = False
-        self.window.bind("<Destroy>", self.destroy)  # this will fire multiple times on destroy
+        self.window.bind("<Destroy>", self.on_destroy)
         manager.register(self)
 
-    def show(self, block=True):
-        if block:
-            self.window.mainloop()
-        else:
-            pass
+        self.tabs = []
 
-    def pause(self, timeout):
-        # timeout: in seconds
+    def on_destroy(self, event):
+        if event.widget == self.window:  # we also get destroy events for childs so we need to filter them
+            if not self._destroyed:
+                manager.unregister(self)
+                self._destroyed = True
+            else:
+                print('Error: double destroyed', self.window)
 
-        milliseconds = int(1000 * timeout)
-        if milliseconds > 0:
-            self._event_loop_id = self.window.after(milliseconds, self.stop_event_loop)
-        else:
-            self._event_loop_id = self.window.after_idle(self.stop_event_loop)
+    def register(self, tab):
+        self.tabs.append(tab)
 
-        self.window.mainloop()
-
-    def stop_event_loop(self):
-        if self._event_loop_id:
-            self.window.after_cancel(self._event_loop_id)
-            self._event_loop_id = None
-        self.window.quit()
-
-    def destroy(self, *args):
-        print("destroy")
-        if not self._destroyed:
-            if self._event_loop_id:
-                self.window.after_cancel(self._event_loop_id)
-            manager.unregister(self)
-            self._destroyed = True
+    def unregister(self, tab):
+        self.tabs.pop(self.tabs.index(tab))
+        if len(self.tabs) == 0:
+            self.window.destroy()  # close if all tabs were closed by the user
 
 def viewer(title="Matrix Viewer"):
     return Viewer(title)
@@ -81,11 +68,11 @@ def view(matrix):
 
 def show(block=True):
     if len(manager.registered_viewers) > 0:
-        manager.any_viewer().show(block)
+        manager.show(block)
 
 def pause(timeout):
     if len(manager.registered_viewers) > 0:
-        manager.any_viewer().pause(timeout)
+        manager.pause(timeout)
     else:
         time.sleep(timeout)
 
