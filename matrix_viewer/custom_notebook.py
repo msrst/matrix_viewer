@@ -48,7 +48,7 @@ class CustomNotebook(ttk.Notebook):
 
         if self._active == index:
             self.forget(index)
-            self.event_generate("<<NotebookTabClosed>>")
+            self.event_generate("<<NotebookTabClosed>>", x=index, when="tail")
 
         self.state(["!pressed"])
         self._active = None
@@ -57,16 +57,16 @@ class CustomNotebook(ttk.Notebook):
         style = ttk.Style(manager.tk_root)
         print(style.element_names())
         self.images = (
-            tk.PhotoImage("img_close", data='''
+            tk.PhotoImage("img_close", master=manager.tk_root, data='''
                 R0lGODlhCAAIAMIBAAAAADs7O4+Pj9nZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQg
                 d2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU
                 5kEJADs=
                 '''),
-            tk.PhotoImage("img_closeactive", data='''
+            tk.PhotoImage("img_closeactive", master=manager.tk_root, data='''
                 R0lGODlhCAAIAMIEAAAAAP/SAP/bNNnZ2cbGxsbGxsbGxsbGxiH5BAEKAAQALAAA
                 AAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
                 '''),
-            tk.PhotoImage("img_closepressed", data='''
+            tk.PhotoImage("img_closepressed", master=manager.tk_root, data='''
                 R0lGODlhCAAIAMIEAAAAAOUqKv9mZtnZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQg
                 d2l0aCBHSU1QACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU
                 5kEJADs=

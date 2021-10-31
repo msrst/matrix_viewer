@@ -32,7 +32,7 @@ class ManagerSingleton:
             # Usually, tk apps have a main window created with tk.Tk() and child windows created with tk.Toplevel. But the child
             # windows are all closed if the main window is closed. Therefore, we cannot use the main window here. Instead, hide
             # it and only create child windows.
-            self.tk_root.overrideredirect(1)  # prevents flashing up window
+            # self.tk_root.overrideredirect(1)  # prevents flashing up window
             self.tk_root.withdraw()
         return self.tk_root
 

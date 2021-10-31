@@ -23,6 +23,7 @@ class Viewer():
         self.window['bg'] = '#AC99F2'
 
         self.paned = CustomNotebook(self.window)
+        self.paned.bind("<<NotebookTabClosed>>", self.on_tab_closed)  # binding child.destroy does not work on windows because there, destroy is called on window close but not on tab close as on linux
         f2 = tk.Frame(self.window)
 
         self.paned.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
@@ -48,12 +49,31 @@ class Viewer():
             else:
                 print('Error: double destroyed', self.window)
 
+    def on_tab_closed(self, event):
+        new_tab_frames = self.paned.tabs()
+        diff = set(new_tab_frames).symmetric_difference(set(self.tab_frames))
+        assert len(diff) == 1, f"invalid frame difference {new_tab_frames} vs. {self.tab_frames}"
+        closed_tab_top_frame, = diff
+
+        # find the ViewerTab associated with that frame
+        found = 0
+        for tab in self.tabs:
+            if str(tab.top_frame) == closed_tab_top_frame:
+                found += 1
+                tab.on_destroy()
+        if found != 1:
+            print('Error: frame', closed_tab_top_frame, 'not found', found)
+
+        self.tab_frames = new_tab_frames
+
     def register(self, tab):
         self.tabs.append(tab)
+        self.tab_frames = self.paned.tabs()
 
     def unregister(self, tab):
         self.tabs.pop(self.tabs.index(tab))
         if len(self.tabs) == 0:
+            print('self destroy')
             self.window.destroy()  # close if all tabs were closed by the user
 
 def viewer(title="Matrix Viewer"):

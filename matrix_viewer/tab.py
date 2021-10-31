@@ -43,7 +43,7 @@ class ViewerTab():
         self.top_frame = tk.Frame(self.viewer.paned)
         if matrix_title is None:
             matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
-        self._tab_id = self.viewer.paned.add(self.top_frame, text=matrix_title)
+        self.viewer.paned.add(self.top_frame, text=matrix_title)
         # self.viewer.paned.forget(self._tab_id)  -> remove tab
         print('added tab with', matrix_title)
 
@@ -72,8 +72,6 @@ class ViewerTab():
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
         self.yscrollbar = tk.Scrollbar(f1a, orient=tk.VERTICAL, command=self.on_y_scroll)
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.top_frame.bind("<Destroy>", self.on_destroy)
 
         self.viewer.register(self)
 
@@ -264,9 +262,8 @@ class ViewerTab():
             self.scroll_y()
         self.draw()
 
-    def on_destroy(self, event):
-        if event.widget == self.top_frame:
-            self.viewer.unregister(self)
+    def on_destroy(self):
+        self.viewer.unregister(self)
 
     def adjust_selection(self, event):
         hit_x = (event.x - self.row_heading_width) // self.cell_width + self.xscroll_item
