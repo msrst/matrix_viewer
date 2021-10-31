@@ -54,6 +54,8 @@ If you are proposing a feature:
 * Remember that this is a volunteer-driven project, and that contributions
   are welcome :)
 
+Note that also user experience improvements and GUI design propasals are welcome.
+
 Get Started!
 ------------
 
@@ -76,14 +78,18 @@ Ready to contribute? Here's how to set up `matrix_viewer` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+5. When you're done making changes, check that the GUI still works. You can run
+   flake8 if you want, but I don't really care.
+   Currently there are no notable automatic tests since this is a GUI-centric project.
+   To get flake8 and tox, just pip install them into your virtualenv.
 
     $ flake8 matrix_viewer tests
     $ python setup.py test or pytest
     $ tox
 
-   To get flake8 and tox, just pip install them into your virtualenv.
+   It is more important to do the manual tests:
+
+    $ python tests/gui_manual.py
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -98,20 +104,12 @@ Pull Request Guidelines
 
 Before you submit a pull request, check that it meets these guidelines:
 
-1. The pull request should include tests.
-2. If the pull request adds functionality, the docs should be updated. Put
+1. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
-   https://travis-ci.com/msrst/matrix_viewer/pull_requests
-   and make sure that the tests pass for all supported Python versions.
-
-Tips
-----
-
-To run a subset of tests::
-
-$ pytest tests.test_matrix_viewer
+2. Try to test your code at least under windows and linux. Use
+   ``tests/gui_manual.py`` for a quick manual step-by-step test of the
+   most basic features.
 
 
 Deploying

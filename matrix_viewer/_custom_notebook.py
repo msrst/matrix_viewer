@@ -3,7 +3,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from .manager import manager
+from ._manager import manager
 
 class CustomNotebook(ttk.Notebook):
     """A ttk Notebook with close buttons on each tab"""

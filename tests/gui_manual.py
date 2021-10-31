@@ -63,7 +63,7 @@ def test_multiple_windows():
     matrix_viewer.show()
 
 test_pyplot_interoperability()
-test_pyplot_interoperability_gtkagg
+test_pyplot_interoperability_gtkagg()
 test_struct_strings()
 test_struct_empty()
 test_multiple_windows()

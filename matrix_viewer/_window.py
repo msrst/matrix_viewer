@@ -1,30 +1,25 @@
 
 import tkinter as tk
-import tkinter.font
 import tkinter.ttk as ttk
-import matplotlib
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.figure
-import math
 import time
-import os
-import platform
-from .manager import manager
-from .utils import clip
-from .tab_numpy import ViewerTabNumpy
-from .tab_struct import ViewerTabStruct
-from .custom_notebook import CustomNotebook
+from ._manager import manager
+from ._tab_numpy import ViewerTabNumpy
+from ._tab_struct import ViewerTabStruct
+from ._custom_notebook import CustomNotebook
 
 class Viewer():
+    """Class representing a matrix viewer window."""
+
     def __init__(self, title="Matrix Viewer"):
+        """Constructs a new viewer window."""
         self.window  = tk.Toplevel(manager.get_or_create_root())
         self.window.title(title)
         self.window.geometry('500x500')
         self.window['bg'] = '#AC99F2'
 
         self.paned = CustomNotebook(self.window)
-        self.paned.bind("<<NotebookTabClosed>>", self.on_tab_closed)  # binding child.destroy does not work on windows because there, destroy is called on window close but not on tab close as on linux
+        self.paned.bind("<<NotebookTabClosed>>", self._on_tab_closed)  # binding child.destroy does not work on windows because there, destroy is called on window close but not on tab close as on linux
         f2 = tk.Frame(self.window)
 
         self.paned.grid(column=0, row=0, sticky="nsew")  # sticky: north south east west, specify which sides the inner widget should be tuck to
@@ -37,12 +32,12 @@ class Viewer():
 
         self._event_loop_id = None
         self._destroyed = False
-        self.window.bind("<Destroy>", self.on_destroy)
+        self.window.bind("<Destroy>", self._on_destroy)
         manager.register(self)
 
         self.tabs = []
 
-    def on_destroy(self, event):
+    def _on_destroy(self, event):
         if event.widget == self.window:  # we also get destroy events for childs so we need to filter them
             if not self._destroyed:
                 manager.unregister(self)
@@ -50,7 +45,7 @@ class Viewer():
             else:
                 print('Error: double destroyed', self.window)
 
-    def on_tab_closed(self, event):
+    def _on_tab_closed(self, event):
         new_tab_frames = self.paned.tabs()
         diff = set(new_tab_frames).symmetric_difference(set(self.tab_frames))
         assert len(diff) == 1, f"invalid frame difference {new_tab_frames} vs. {self.tab_frames}"
@@ -61,47 +56,72 @@ class Viewer():
         for tab in self.tabs:
             if str(tab.top_frame) == closed_tab_top_frame:
                 found += 1
-                tab.on_destroy()
+                tab._on_destroy()
         if found != 1:
             print('Error: frame', closed_tab_top_frame, 'not found', found)
 
         self.tab_frames = new_tab_frames
 
-    def register(self, tab):
+    def _register(self, tab):
         self.tabs.append(tab)
         self.tab_frames = self.paned.tabs()
 
-    def unregister(self, tab):
+    def _unregister(self, tab):
         self.tabs.pop(self.tabs.index(tab))
         if len(self.tabs) == 0:
             self.window.destroy()  # close if all tabs were closed by the user
 
     def view(self, object):
+        """Adds a new tab that visualizes the specified object."""
         if type(object) == np.ndarray:
             return ViewerTabNumpy(self, object)
         else:
             return ViewerTabStruct(self, object)
 
 def viewer(title="Matrix Viewer"):
+    """Creates a new viewer window.
+
+    :param title: The string shown in the window header.
+    :return: The newly created viewer window.
+    """
     return Viewer(title)
 
 def view(object):
+    """Creates a new tab in the current window, which shows the object.
+    Creates a new window if there are no opened windows.
+
+    :param object: the object that is to be visualized.
+    :return: The newly created viewer tab.
+    """
     viewer = manager.last_viewer
     if viewer is None:
         viewer = Viewer()
     return viewer.view(object)
 
 def show(block=True):
+    """Runs the event loop until all windows are closed.
+
+    :param block: To keep API similarity to pyplot - if False, this will do nothing; if True, this function will block until all windows are closed."""
     if len(manager.registered_viewers) > 0:
         manager.show(block)
 
 def pause(timeout):
+    """Runs the event loop for the specified time interval.
+
+    :param timeout: Time interval in seconds. If 0, it will exit immediately after processing all pending GUI events."""
     if len(manager.registered_viewers) > 0:
         manager.pause(timeout)
     else:
         time.sleep(timeout)
 
 def show_with_pyplot():
+    """This function should be used instead of show when you are also using matplotlib.pyplot.
+    It concurrently runs the event loop for pyplot and matrix_viewer. It will run until all numpy and
+    matrix_viewer windows were closed by the user.
+
+    Note that unfortunately, pyplot and matrix_viewer appear to be slightly laggy if you are using a
+    different pyplot backend than tkinter.
+    """
     import matplotlib
     import matplotlib.pyplot
 

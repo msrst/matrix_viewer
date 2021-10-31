@@ -26,7 +26,12 @@ A tabular viewer for numpy arrays, python structs and more similar to the MATLAB
 Features
 --------
 
-* TODO
+* Display numpy 2D-arrays
+* Interactively traverse through python containers like list, dict and classes to view their attributes or data
+* Interoperability with matplotlib.pyplot
+
+This project is tested under windows and linux. I don't have a Mac, so there might be Mac issues. But
+don't hesitate to file issues, or ideally pull requests targetting Mac support.
 
 Credits
 -------

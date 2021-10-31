@@ -1,5 +1,5 @@
 Welcome to Matrix Viewer's documentation!
-======================================
+=========================================
 
 .. toctree::
    :maxdepth: 2

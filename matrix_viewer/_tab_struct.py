@@ -3,11 +3,13 @@ import numpy as np
 import tkinter as tk
 
 from numpy.lib.arraysetops import isin
-from .tab import ViewerTab
-from .utils import max_or_value
+from ._tab import ViewerTab
+from ._utils import max_or_value
 
 class ViewerTabStruct(ViewerTab):
+    """A viewer tab that can be used to visualize a class, list, dict and some other container types."""
     def __init__(self, viewer, object, title=None):
+        """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.object = object
 
         self.font_size = 12
@@ -73,10 +75,10 @@ class ViewerTabStruct(ViewerTab):
         self.clickable_color = "#000077"
         self.clickable_hover_color = "#0000ff"
 
-        self.canvas1.bind("<ButtonRelease-1>", self.on_mouse_release)
+        self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
 
-    def on_mouse_release(self, event):
-        hit_x, hit_y = self.calc_hit_cell(event.x, event.y)
+    def _on_mouse_release(self, event):
+        hit_x, hit_y = self._calc_hit_cell(event.x, event.y)
 
         if (hit_x is not None) and (hit_x != -1) and (hit_y != -1):
             assert hit_x == 0
@@ -85,7 +87,7 @@ class ViewerTabStruct(ViewerTab):
                 new_tab_index = self.viewer.paned.index('end') - 1  # assumes that the new tab is the last tab
                 self.viewer.paned.select(new_tab_index)  # go to the currently added tab
 
-    def draw_cells(self):
+    def _draw_cells(self):
         x = self.cell_hpadding
         y = self.cell_vpadding
         self.canvas1.create_text(x, y, text=self.row_heading_heading, font=self.cell_font, anchor='nw')
