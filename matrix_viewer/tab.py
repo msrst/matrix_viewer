@@ -89,7 +89,7 @@ class ViewerTab():
 
         self.cell_height = self.font_size + self.cell_vpadding * 2
         self.cell_width = self.max_text_width + self.cell_hpadding * 2
-        self.row_heading_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0])) - 1)) + self.cell_hpadding * 2
+        self.row_heading_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1)))) + self.cell_hpadding * 2
         self.xscroll_items = self.matrix.shape[1]
         self.yscroll_items = self.matrix.shape[0]
         self.xscroll_item = 0
