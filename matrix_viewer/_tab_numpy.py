@@ -1,11 +1,12 @@
 
+import numpy as np
 import tkinter as tk
 import tkinter.font
 import time
 
-from ._tab import ViewerTab
+from ._tab_table import ViewerTabTable
 
-class ViewerTabNumpy(ViewerTab):
+class ViewerTabNumpy(ViewerTabTable):
     """A viewer tab that can be used to visualize numpy.ndarray matrices."""
     def __init__(self, viewer, matrix, matrix_title=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
@@ -27,7 +28,7 @@ class ViewerTabNumpy(ViewerTab):
         self.row_heading_formatter = "{:d}".format
         self.row_heading_text_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1))))
 
-        ViewerTab.__init__(self, viewer, matrix_title, matrix.shape[1], matrix.shape[0])
+        ViewerTabTable.__init__(self, viewer, matrix_title, matrix.shape[1], matrix.shape[0])
 
         self.canvas1.bind("<ButtonPress-1>", self._on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
@@ -133,3 +134,6 @@ class ViewerTabNumpy(ViewerTab):
             return None
         else:
             return [self._focused_cell[1], self._focused_cell[0]]
+
+def matches_tab_numpy(object):
+    return isinstance(object, np.ndarray) and (object.ndim <= 2)

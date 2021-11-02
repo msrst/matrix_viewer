@@ -3,10 +3,10 @@ import tkinter as tk
 import numpy as np
 import time
 from ._manager import manager
-from ._tab_numpy import ViewerTabNumpy
-from ._tab_struct import ViewerTabStruct
+from ._tab_numpy import ViewerTabNumpy, matches_tab_numpy
+from ._tab_struct import ViewerTabStruct, matches_tab_struct
+from ._tab_text import ViewerTabText
 from ._custom_notebook import CustomNotebook
-
 
 class Viewer():
     """Class representing a matrix viewer window."""
@@ -53,30 +53,40 @@ class Viewer():
 
         # find the ViewerTab associated with that frame
         found = 0
-        for tab in self.tabs:
-            if str(tab.top_frame) == closed_tab_top_frame:
+        for tab, top_frame in self.tabs:
+            if str(top_frame) == closed_tab_top_frame:
                 found += 1
-                tab._on_destroy()
+                tab.on_destroy()
         if found != 1:
             print('Error: frame', closed_tab_top_frame, 'not found', found)
 
         self.tab_frames = new_tab_frames
 
-    def _register(self, tab):
-        self.tabs.append(tab)
-        self.tab_frames = self.paned.tabs()
+    def register(self, tab, top_frame, tab_title):
+        """
+        This method should only be used by tabs.
+        """
+        self.tabs.append((tab, top_frame))
+        self.paned.add(top_frame, text=tab_title)
+        self.tab_frames = self.paned.tabs()  # update frame list
 
-    def _unregister(self, tab):
-        self.tabs.pop(self.tabs.index(tab))
+    def unregister(self, tab):
+        """
+        This method should only be used by tabs.
+        """
+        self.tabs.pop(list(zip(*self.tabs))[0].index(tab))
         if len(self.tabs) == 0:
             self.window.destroy()  # close if all tabs were closed by the user
 
     def view(self, object):
         """Adds a new tab that visualizes the specified object."""
-        if type(object) == np.ndarray:
+        if matches_tab_numpy(object):
             return ViewerTabNumpy(self, object)
-        else:
+        elif matches_tab_struct(object):
             return ViewerTabStruct(self, object)
+        else:
+            return ViewerTabText(self, object)
+
 
 def viewer(title="Matrix Viewer"):
     """Creates a new viewer window.
@@ -85,6 +95,7 @@ def viewer(title="Matrix Viewer"):
     :return: The newly created viewer window.
     """
     return Viewer(title)
+
 
 def view(object):
     """Creates a new tab in the current window, which shows the object.
@@ -98,12 +109,14 @@ def view(object):
         viewer = Viewer()
     return viewer.view(object)
 
+
 def show(block=True):
     """Runs the event loop until all windows are closed.
 
     :param block: To keep API similarity to pyplot - if False, this will do nothing; if True, this function will block until all windows are closed."""
     if len(manager.registered_viewers) > 0:
         manager.show(block)
+
 
 def pause(timeout):
     """Runs the event loop for the specified time interval.
@@ -113,6 +126,7 @@ def pause(timeout):
         manager.pause(timeout)
     else:
         time.sleep(timeout)
+
 
 def show_with_pyplot():
     """This function should be used instead of show when you are also using matplotlib.pyplot.

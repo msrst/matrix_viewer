@@ -2,10 +2,10 @@
 import numpy as np
 import tkinter as tk
 
-from ._tab import ViewerTab
+from ._tab_table import ViewerTabTable
+from ._tab_numpy import matches_tab_numpy
 
-
-class ViewerTabStruct(ViewerTab):
+class ViewerTabStruct(ViewerTabTable):
     """A viewer tab that can be used to visualize a class, list, dict and some other container types."""
     def __init__(self, viewer, object, title=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
@@ -41,24 +41,23 @@ class ViewerTabStruct(ViewerTab):
         self.object_value_strings = []
         self.object_value_clickable = []
         for _, value in self.object_attributes:
-            clickable = True
             if isinstance(value, (int, float)):  # also matches bool because bool is a subclass of int
                 value_string = str(value)
-                clickable = False
             elif type(value) in [str, bytes]:
                 value_string = str(value)
                 if '\n' in value_string:
                     value_string = f"multiline string with {len(value)} characters"
-                clickable = False
             elif value is None:
                 value_string = "None"
-                clickable = False
             elif type(value) == np.ndarray:
                 value_string = f"{value.shape} {value.dtype} ndarray"
             elif type(value) in [list, dict, set, tuple]:
                 value_string = f"{value.__class__.__name__} with {len(value)} elements"
             else:
                 value_string = str(type(value))
+
+            clickable = matches_tab_numpy(value) or matches_tab_struct(value)
+
             self.object_value_strings.append(value_string)
             self.object_value_clickable.append(clickable)
 
@@ -69,7 +68,7 @@ class ViewerTabStruct(ViewerTab):
         if title is None:
             title = default_title
 
-        ViewerTab.__init__(self, viewer, title, 1, len(self.object_attributes))
+        ViewerTabTable.__init__(self, viewer, title, 1, len(self.object_attributes))
 
         self.clickable_color = "#000077"
         self.clickable_hover_color = "#0000ff"
@@ -111,3 +110,6 @@ class ViewerTabStruct(ViewerTab):
                     self.canvas1.create_text(x, y, text=self.object_value_strings[i_row], font=self.cell_font, anchor='nw')
                 y += self.cell_height
             x += self.cell_width
+
+def matches_tab_struct(object):
+    return not isinstance(object, (int, float, str, bytes, np.ndarray))
