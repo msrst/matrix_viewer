@@ -7,13 +7,17 @@ import time
 from ._tab_table import ViewerTabTable
 
 class ViewerTabNumpy(ViewerTabTable):
-    """A viewer tab that can be used to visualize numpy.ndarray matrices."""
+    """A viewer tab that can be used to visualize numpy.ndarray matrices and vectors."""
     def __init__(self, viewer, matrix, matrix_title=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.matrix = matrix
+        self.num_dims = matrix.ndim
 
         if matrix_title is None:
-            matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
+            if self.num_dims == 1:
+                matrix_title = f"{self.matrix.shape[0]} {self.matrix.dtype}"
+            else:
+                matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
 
         self.font_size = 12
         self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
@@ -28,7 +32,10 @@ class ViewerTabNumpy(ViewerTabTable):
         self.row_heading_formatter = "{:d}".format
         self.row_heading_text_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1))))
 
-        ViewerTabTable.__init__(self, viewer, matrix_title, matrix.shape[1], matrix.shape[0])
+        if self.num_dims == 1:
+            ViewerTabTable.__init__(self, viewer, matrix_title, 1, matrix.shape[0], highlight_selected_columns=False)
+        else:
+            ViewerTabTable.__init__(self, viewer, matrix_title, matrix.shape[1], matrix.shape[0])
 
         self.canvas1.bind("<ButtonPress-1>", self._on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
@@ -74,21 +81,21 @@ class ViewerTabNumpy(ViewerTabTable):
                 if self.mouse_press_start[0] != -1:
                     if event.x < self.row_heading_width:
                         self.xscroll_item = max(self.xscroll_item - 1, 0)
-                        self.scroll_x()
+                        self._scroll_x()
                         self.last_autoscroll_time = current_time
                     elif event.x > self.row_heading_width + self.xscroll_page_size * self.cell_width:
                         self.xscroll_item = min(self.xscroll_item + 1, self.xscroll_max)
-                        self.scroll_x()
+                        self._scroll_x()
                         self.last_autoscroll_time = current_time
 
                 if self.mouse_press_start[1] != -1:
                     if event.y < self.cell_height:
                         self.yscroll_item = max(self.yscroll_item - 1, 0)
-                        self.scroll_y()
+                        self._scroll_y()
                         self.last_autoscroll_time = current_time
                     elif event.y > self.cell_height + self.yscroll_page_size * self.cell_height:
                         self.yscroll_item = min(self.yscroll_item + 1, self.yscroll_max)
-                        self.scroll_y()
+                        self._scroll_y()
                         self.last_autoscroll_time = current_time
 
             self._adjust_selection(event)
@@ -102,15 +109,26 @@ class ViewerTabNumpy(ViewerTabTable):
             y += self.cell_height
         x += self.cell_width
 
-        for i_column in range(self.xscroll_item, min(self.xscroll_item + self.xscroll_page_size + 1, self.xscroll_items)):
-            y = self.cell_vpadding
-            self.canvas1.create_text(x - self.max_text_width // 2, y, text=self.column_heading_formatter(i_column), font=self.cell_font, anchor='n')
-            y += self.cell_height
-
-            for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
-                self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row, i_column]), font=self.cell_font, anchor='ne')
+        if self.num_dims == 1:
+            for i_column in range(self.xscroll_item, min(self.xscroll_item + self.xscroll_page_size + 1, self.xscroll_items)):
+                y = self.cell_vpadding
+                self.canvas1.create_text(x, y, text='Value', font=self.cell_font, anchor='ne')
                 y += self.cell_height
-            x += self.cell_width
+
+                for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
+                    self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row]), font=self.cell_font, anchor='ne')
+                    y += self.cell_height
+                x += self.cell_width
+        else:
+            for i_column in range(self.xscroll_item, min(self.xscroll_item + self.xscroll_page_size + 1, self.xscroll_items)):
+                y = self.cell_vpadding
+                self.canvas1.create_text(x - self.max_text_width // 2, y, text=self.column_heading_formatter(i_column), font=self.cell_font, anchor='n')
+                y += self.cell_height
+
+                for i_row in range(self.yscroll_item, min(self.yscroll_item + self.yscroll_page_size + 1, self.yscroll_items)):
+                    self.canvas1.create_text(x, y, text=self.float_formatter(self.matrix[i_row, i_column]), font=self.cell_font, anchor='ne')
+                    y += self.cell_height
+                x += self.cell_width
 
     def get_selection(self):
         """Get the current selected matrix area.

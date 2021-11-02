@@ -36,4 +36,5 @@ class ViewerTabText(ViewerTab):
         self.viewer.register(self, self.top_frame, title)
 
     def on_destroy(self):
+        """Internal method called by the viewer."""
         self.viewer.unregister(self)

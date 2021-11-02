@@ -26,10 +26,6 @@ class Viewer():
         self.window.rowconfigure(0, weight=1)
         self.window.columnconfigure(0, weight=1)
 
-        f2.grid(column=0, row=2, sticky="n")
-        tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-        tk.Button(f2, text="DAT BUTTON IS IN F2").pack(side=tk.LEFT)
-
         self._event_loop_id = None
         self._destroyed = False
         self.window.bind("<Destroy>", self._on_destroy)
@@ -64,7 +60,7 @@ class Viewer():
 
     def register(self, tab, top_frame, tab_title):
         """
-        This method should only be used by tabs.
+        This method should only be used by tabs. It adds the tab to the window.
         """
         self.tabs.append((tab, top_frame))
         self.paned.add(top_frame, text=tab_title)

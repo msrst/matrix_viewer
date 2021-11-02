@@ -9,12 +9,13 @@ from ._tab import ViewerTab
 from ._utils import clip
 
 class ViewerTabTable(ViewerTab):
-    def __init__(self, viewer, title, num_columns, num_rows):
+    def __init__(self, viewer, title, num_columns, num_rows, highlight_selected_columns=True):
         ViewerTab.__init__(self)
 
         self.viewer = viewer
         self.xscroll_items = num_columns
         self.yscroll_items = num_rows
+        self.highlight_selected_columns = highlight_selected_columns
 
         self.cell_vpadding = 5
         self.cell_hpadding = 5
@@ -28,15 +29,6 @@ class ViewerTabTable(ViewerTab):
         self.autoscroll_delay = 0.1  # in seconds
 
         self._calc_dimensions()
-
-        # f3 = tk.Frame(self.viewer.paned, bg='#0000ff')
-        # self.viewer.paned.add(f3, text="testo2")
-        # canvas2 = tk.Frame(f3, bg=self.background_color)
-        # canvas2.grid(column=0, row=0, sticky="nsew")
-        # f3.rowconfigure(0, weight=1)
-        # f3.columnconfigure(0, weight=1)
-        # but2 = tk.Button(f3, text="DAT BUTTON IS IN PANED testo2")
-        # but2.grid(column=0, row=1)
 
         self.top_frame = tk.Frame(self.viewer.paned)
 
@@ -222,9 +214,10 @@ class ViewerTabTable(ViewerTab):
             selection_y0 = self.cell_height + max(self._selection[1] - self.yscroll_item, 0) * self.cell_height
             selection_x1 = self.row_heading_width + max(self._selection[2] - self.xscroll_item, 0) * self.cell_width
             selection_y1 = self.cell_height + max(self._selection[3] - self.yscroll_item, 0) * self.cell_height
-            self.canvas1.create_rectangle(0, selection_y0, self.row_heading_width, selection_y1, width=0, fill=self.selection_heading_color)
-            self.canvas1.create_rectangle(selection_x0, selection_y0, selection_x1, selection_y1, width=0, fill=self.selection_color)
-            self.canvas1.create_rectangle(selection_x0, 0, selection_x1, self.cell_height, width=0, fill=self.selection_heading_color)
+            self.canvas1.create_rectangle(0, selection_y0, self.row_heading_width, selection_y1, width=0, fill=self.selection_heading_color)  # highlight row headings
+            self.canvas1.create_rectangle(selection_x0, selection_y0, selection_x1, selection_y1, width=0, fill=self.selection_color)  # highlight the selection in blue
+            if self.highlight_selected_columns:
+                self.canvas1.create_rectangle(selection_x0, 0, selection_x1, self.cell_height, width=0, fill=self.selection_heading_color)  # highlight column headings
 
         if (self._focused_cell is not None) and (self._focused_cell[0] >= self.xscroll_item) and (self._focused_cell[1] >= self.yscroll_item):
             focused_x0 = self.row_heading_width + (self._focused_cell[0] - self.xscroll_item) * self.cell_width
