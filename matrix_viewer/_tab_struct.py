@@ -11,8 +11,8 @@ class ViewerTabStruct(ViewerTabTable):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.object = object
 
-        self.font_size = 12
-        self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
+        self.font_size = 13
+        self.cell_font = tk.font.Font(size=-self.font_size, family="Helvetica")  # default root window needed to create font. -size -> size in pixels instead of inches
 
         default_title = object.__class__.__name__
 

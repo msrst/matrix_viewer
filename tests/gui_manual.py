@@ -9,6 +9,7 @@ sys.path.append(os.getcwd())  # to be able to include matrix_viewer
 import numpy as np
 import matrix_viewer
 import matplotlib
+import platform
 
 
 def open_with_pyplot(backend='TkAgg'):
@@ -33,6 +34,10 @@ def test_pyplot_interoperability():
     open_with_pyplot('TkAgg')
 
 def test_pyplot_interoperability_gtkagg():
+    # on linux, the following is needed:
+    # pycairo>=1.16.0
+    # pygobject==3.42.0
+
     print('TEST test_pyplot_interoperability_gtkagg')
     print('TEST: Close the matrix viewer window first.')
     print('TEST: Pyplot still open? Loop stops if pyplot closed?')
@@ -64,7 +69,8 @@ def test_multiple_windows():
     matrix_viewer.show()
 
 test_pyplot_interoperability()
-test_pyplot_interoperability_gtkagg()
+if platform.system() == 'Linux':
+    test_pyplot_interoperability_gtkagg()
 test_struct_strings()
 test_struct_empty()
 test_multiple_windows()

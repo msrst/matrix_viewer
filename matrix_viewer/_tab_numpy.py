@@ -19,8 +19,8 @@ class ViewerTabNumpy(ViewerTabTable):
             else:
                 matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
 
-        self.font_size = 12
-        self.cell_font = tk.font.Font(size=self.font_size, family="Helvetica")  # default root window needed to create font
+        self.font_size = 13
+        self.cell_font = tk.font.Font(size=-self.font_size, family="Helvetica")  # default root window needed to create font. -size -> size in pixels instead of inches
 
         # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
         # (e.g. integer / floating point format, exp format vs. 0.00000)

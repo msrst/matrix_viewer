@@ -6,9 +6,6 @@ Matrix Viewer
 .. image:: https://img.shields.io/pypi/v/matrix_viewer.svg
         :target: https://pypi.python.org/pypi/matrix_viewer
 
-.. image:: https://img.shields.io/travis/msrst/matrix_viewer.svg
-        :target: https://travis-ci.com/msrst/matrix_viewer
-
 .. image:: https://readthedocs.org/projects/matrix-viewer/badge/?version=latest
         :target: https://matrix-viewer.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
@@ -31,7 +28,7 @@ Features
 * Interoperability with matplotlib.pyplot
 
 This project is tested under windows and linux. I don't have a Mac, so there might be Mac issues. But
-don't hesitate to file issues, or ideally pull requests targetting Mac support.
+don't hesitate to file issues, or even better create pull requests targetting Mac support.
 
 Credits
 -------

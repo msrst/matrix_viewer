@@ -13,6 +13,8 @@ To use Matrix Viewer to display a matrix::
     matrix_viewer.view(my_matrix)
     matrix_viewer.show()
 
+.. image:: _static/matrix_screenshot.png
+
 To use Matrix Viewer to display an object, list, dict or set::
 
     import matrix_viewer
@@ -24,8 +26,10 @@ To use Matrix Viewer to display an object, list, dict or set::
             self.name = 'arachne'
             self.my_array = np.array([[1, 2, 3], [4, 5, 6]])
 
-    matrix_viewer.view(my_data)
+    matrix_viewer.view(MyDemoClass())
     matrix_viewer.show()
+
+.. image:: _static/struct_screenshot.png
 
 One can traverse through attributes by clicking on the appropriate value. For example, clicking on my_array will show the matrix in a new tab.
 
@@ -53,7 +57,7 @@ It is possible to create multiple windows with multiple tabs like this::
 There is also a more object-oriented API::
 
     win1 = matrix_viewer.viewer(title='Please click a cell')
-    tab1 = win1.view([[1, 2], [3, 4]])
+    tab1 = win1.view(np.array([[1, 2], [3, 4]]))
 
     win2 = matrix_viewer.viewer()
     win2.view(np.random.rand(100, 200))
