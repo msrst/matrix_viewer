@@ -7,10 +7,11 @@ from ._tab_table import ViewerTabTable
 
 class ViewerTabNumpy(ViewerTabTable):
     """A viewer tab that can be used to visualize numpy.ndarray matrices and vectors."""
-    def __init__(self, viewer, matrix, matrix_title=None, font_size=None):
+    def __init__(self, viewer, matrix, matrix_title=None, font_size=None, cell_formatter=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.matrix = matrix
         self.num_dims = matrix.ndim
+        assert matrix.dtype.isbuiltin == 1, "matrix must be a type built-in into numpy (e. g. float32 ndarray), but it is a composed type or something else"
 
         if matrix_title is None:
             if self.num_dims == 1:
@@ -20,10 +21,44 @@ class ViewerTabNumpy(ViewerTabTable):
 
         self._calc_font(font_size)
 
-        # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
-        # (e.g. integer / floating point format, exp format vs. 0.00000)
-        # TODO check how to handle complex numbers
-        self.float_formatter = "{:.6f}".format
+        if matrix.dtype.kind == 'c':
+            self.max_val = np.max(matrix.real) + np.max(matrix.imag) * 1j
+        else:
+            self.max_val = np.max(matrix)
+
+        small_formatted_threshold = 0.1
+        max_value_for_fixed_point = 1e8
+        if cell_formatter is None:
+            if matrix.dtype.kind in ['i', 'u']:  # signed, unsigned integer
+                self.float_formatter = "{:d}".format
+            elif matrix.dtype.kind == 'b': # boolean
+                self.float_formatter = "{}".format
+            elif matrix.dtype.kind == 'f':
+                if self.max_val >= max_value_for_fixed_point:
+                    self.float_formatter = "{:.6e}".format
+                else:
+                    if np.sum(np.logical_and(matrix != 0, np.abs(matrix) < 1e-4)) < small_formatted_threshold * np.product(matrix.shape):
+                        # below 10% of the values is not looking nice with non-exponential format
+                        self.float_formatter = "{:.6f}".format
+                    else:
+                        self.float_formatter = "{:.6e}".format  # use exponential format
+            elif matrix.dtype.kind == 'c':  # complex float (there is no complex int)
+                if (self.max_val.real >= max_value_for_fixed_point) or (self.max_val.imag >= max_value_for_fixed_point):
+                    self.float_formatter = "{:.6e}".format
+                else:
+                    if ((np.sum(np.logical_and(matrix.real != 0, np.abs(matrix.real) < 1e-4))
+                        < small_formatted_threshold * np.product(matrix.shape)) and
+                        (np.sum(np.logical_and(matrix.imag != 0, np.abs(matrix.imag) < 1e-4))
+                        < small_formatted_threshold * np.product(matrix.shape))):
+                        # below 10% of both the imag and the real part is not looking nice with non-exponential format
+                        self.float_formatter = "{:.6f}".format
+                    else:
+                        self.float_formatter = "{:.6e}".format  # use exponential format
+            else:
+                # use string formatter as fallback
+                self.float_formatter = "{}".format
+        else:
+            self.float_formatter = cell_formatter
 
         self.column_heading_formatter = "{:d}".format
         self.row_heading_formatter = "{:d}".format
@@ -39,7 +74,7 @@ class ViewerTabNumpy(ViewerTabTable):
         self.canvas1.bind("<Motion>", self._on_mouse_motion)
 
     def _font_changed(self):
-        self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
+        self.max_text_width = self.cell_font.measure('0' + self.float_formatter(self.max_val))  # add trailing 0 as a placeholder for better readability
         self.row_heading_text_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1))))
 
     def _on_mouse_press(self, event):

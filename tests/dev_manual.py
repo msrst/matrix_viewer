@@ -17,5 +17,7 @@ v4 = matrix_viewer.view({'a': 'la le lu', 'lala': 123, 'blubbi': np.random.rand(
 matrix_viewer.viewer()
 v3 = matrix_viewer.view(np.random.rand(55) ** 5 * 100)
 v3 = matrix_viewer.view(np.random.rand(3, 4) ** 5 * 100)
+v3 = matrix_viewer.view(np.random.rand(3, 4) ** 5 * 100 * (1e-3 + 1e-3j))
+v3 = matrix_viewer.view(np.random.rand(50, 100) < 0.5)
 
 matrix_viewer.show_with_pyplot()
