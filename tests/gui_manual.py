@@ -63,6 +63,7 @@ def test_multiple_windows():
     print('TEST test_multiple_windows')
     print('TEST: Window "Matrix Viewer" has 1 tabs and window "Second Window" has 2 tabs?')
     print('TEST: Tab allows horizontal and vertical scrolling by using the mouse wheel?')
+    print('TEST: Font size can be changed dynamically with Ctrl-Scroll?')
     matrix_viewer.view(np.random.rand(100, 100))
     v1 = matrix_viewer.viewer('Second Window')
     matrix_viewer.view(v1)

@@ -3,12 +3,11 @@ import numpy as np
 import tkinter as tk
 import tkinter.font
 import time
-
 from ._tab_table import ViewerTabTable
 
 class ViewerTabNumpy(ViewerTabTable):
     """A viewer tab that can be used to visualize numpy.ndarray matrices and vectors."""
-    def __init__(self, viewer, matrix, matrix_title=None):
+    def __init__(self, viewer, matrix, matrix_title=None, font_size=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.matrix = matrix
         self.num_dims = matrix.ndim
@@ -19,18 +18,16 @@ class ViewerTabNumpy(ViewerTabTable):
             else:
                 matrix_title = f"{self.matrix.shape[0]} x {self.matrix.shape[1]} {self.matrix.dtype}"
 
-        self.font_size = 13
-        self.cell_font = tk.font.Font(size=-self.font_size, family="Helvetica")  # default root window needed to create font. -size -> size in pixels instead of inches
+        self._calc_font(font_size)
 
         # TODO determine optimal format here depending on matrix type and appropriately calculate max text width
         # (e.g. integer / floating point format, exp format vs. 0.00000)
         # TODO check how to handle complex numbers
         self.float_formatter = "{:.6f}".format
-        self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
 
         self.column_heading_formatter = "{:d}".format
         self.row_heading_formatter = "{:d}".format
-        self.row_heading_text_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1))))
+        self._font_changed()
 
         if self.num_dims == 1:
             ViewerTabTable.__init__(self, viewer, matrix_title, 1, matrix.shape[0], highlight_selected_columns=False)
@@ -40,6 +37,10 @@ class ViewerTabNumpy(ViewerTabTable):
         self.canvas1.bind("<ButtonPress-1>", self._on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
         self.canvas1.bind("<Motion>", self._on_mouse_motion)
+
+    def _font_changed(self):
+        self.max_text_width = self.cell_font.measure(self.float_formatter(1234.5678))
+        self.row_heading_text_width = self.cell_font.measure("0" * (len(str(self.matrix.shape[0] - 1))))
 
     def _on_mouse_press(self, event):
         if (self._selection is not None) and (event.state & 0x01 == 0x01):  # shift pressed

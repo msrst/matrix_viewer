@@ -5,10 +5,15 @@ import numpy as np
 import math
 import platform
 
+from ._manager import manager
 from ._tab import ViewerTab
 from ._utils import clip
 
 class ViewerTabTable(ViewerTab):
+    """
+    subclasses must implememnt _font_changed(), which calculates cell widths etc on font (size) change
+    """
+
     def __init__(self, viewer, title, num_columns, num_rows, highlight_selected_columns=True):
         ViewerTab.__init__(self)
 
@@ -18,8 +23,8 @@ class ViewerTabTable(ViewerTab):
         self.highlight_selected_columns = highlight_selected_columns
         self.title = title
 
-        self.cell_vpadding = 5
-        self.cell_hpadding = 5
+        self.cell_vpadding = self.font_size // 5
+        self.cell_hpadding = self.font_size // 5
         self.background_color = "#ffffff"
         self.heading_color = "#dddddd"
         self.cell_outline_color = "#bbbbbb"
@@ -30,6 +35,15 @@ class ViewerTabTable(ViewerTab):
         self.autoscroll_delay = 0.1  # in seconds
 
         self._calc_dimensions()
+
+        self.xscroll_item = 0
+        self.yscroll_item = 0
+
+        self._focused_cell = None  # format: [x, y] if a cell is focused
+        self._selection = None  # format: [xstart, ystart, xend, yend] if something was selected
+        self.mouse_press_start = None
+        self.old_mouse_press_start = None
+        self.last_autoscroll_time = 0
 
         self.top_frame = tk.Frame(self.viewer.paned)
 
@@ -66,14 +80,6 @@ class ViewerTabTable(ViewerTab):
         self.row_heading_width = self.row_heading_text_width + self.cell_hpadding * 2
         self.cell_height = self.font_size + self.cell_vpadding * 2
         self.cell_width = self.max_text_width + self.cell_hpadding * 2
-        self.xscroll_item = 0
-        self.yscroll_item = 0
-
-        self._focused_cell = None  # format: [x, y] if a cell is focused
-        self._selection = None  # format: [xstart, ystart, xend, yend] if something was selected
-        self.mouse_press_start = None
-        self.old_mouse_press_start = None
-        self.last_autoscroll_time = 0
 
     def _calc_size_scroll(self):
         self.xscroll_page_size = (self.size_x - self.row_heading_width) // self.cell_width
@@ -85,6 +91,26 @@ class ViewerTabTable(ViewerTab):
         self.yscroll_max = max(self.yscroll_items - self.yscroll_page_size, 0)
         self.yscroll_item = min(self.yscroll_item, self.yscroll_max)
         self._scroll_y()
+
+    def _calc_font(self, user_font_size):
+        dpi = manager.get_or_create_root().winfo_fpixels('1i')
+        if user_font_size is None:
+            if dpi >= 200:
+                self.font_size = 28
+            elif dpi >= 150:
+                self.font_size = 22
+            elif dpi >= 90:
+                self.font_size = 16
+            else:
+                self.font_size = 14
+        else:
+            self.font_size = user_font_size
+
+        # default root window needed to create font. -size -> size in pixels instead of inches
+        if platform.system() == 'Linux':
+            self.cell_font = tk.font.Font(size=-self.font_size, family="Sans")  # Arial was messing up
+        else:
+            self.cell_font = tk.font.Font(size=-self.font_size, family="Arial")
 
     def _scroll_y(self):
         if self.yscroll_items == 0:
@@ -169,6 +195,11 @@ class ViewerTabTable(ViewerTab):
         if event.state & 0x01 == 0x01:  # shift
             self.xscroll_item = clip(self.xscroll_item + delta * 3, 0, self.xscroll_max)
             self._scroll_x()
+        elif event.state & 0x04 == 0x04:  # control
+            self._calc_font(max(self.font_size - delta, 1))
+            self._font_changed()
+            self._calc_dimensions()
+            self._calc_size_scroll()
         else:
             self.yscroll_item = clip(self.yscroll_item + delta * 3, 0, self.yscroll_max)
             self._scroll_y()

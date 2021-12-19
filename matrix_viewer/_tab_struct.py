@@ -7,12 +7,11 @@ from ._tab_numpy import matches_tab_numpy
 
 class ViewerTabStruct(ViewerTabTable):
     """A viewer tab that can be used to visualize a class, list, dict and some other container types."""
-    def __init__(self, viewer, object, title=None):
+    def __init__(self, viewer, object, title=None, font_size=None):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.object = object
 
-        self.font_size = 13
-        self.cell_font = tk.font.Font(size=-self.font_size, family="Helvetica")  # default root window needed to create font. -size -> size in pixels instead of inches
+        self._calc_font(font_size)
 
         default_title = object.__class__.__name__
 
@@ -61,9 +60,7 @@ class ViewerTabStruct(ViewerTabTable):
             self.object_value_strings.append(value_string)
             self.object_value_clickable.append(clickable)
 
-        self.max_text_width = max(self.cell_font.measure(s) for s in (self.object_value_strings + ['Value']))
-        row_headings = list(attr[0] for attr in self.object_attributes)
-        self.row_heading_text_width = max(self.cell_font.measure(s) for s in (row_headings + [self.row_heading_heading]))
+        self._font_changed()
 
         if title is None:
             title = default_title
@@ -74,6 +71,11 @@ class ViewerTabStruct(ViewerTabTable):
         self.clickable_hover_color = "#0000ff"
 
         self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
+
+    def _font_changed(self):
+        self.max_text_width = max(self.cell_font.measure(s) for s in (self.object_value_strings + ['Value']))
+        row_headings = list(attr[0] for attr in self.object_attributes)
+        self.row_heading_text_width = max(self.cell_font.measure(s) for s in (row_headings + [self.row_heading_heading]))
 
     def _on_mouse_release(self, event):
         hit_x, hit_y = self._calc_hit_cell(event.x, event.y)
