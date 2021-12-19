@@ -15,6 +15,8 @@ To use Matrix Viewer to display a matrix::
 
 .. image:: _static/matrix_screenshot.png
 
+It is also possible to display pytorch tensors.
+
 To use Matrix Viewer to display an object, list, dict or set::
 
     import matrix_viewer

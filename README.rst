@@ -30,6 +30,8 @@ Features
 This project is tested under windows and linux. I don't have a Mac, so there might be Mac issues. But
 don't hesitate to file issues, or even better create pull requests targetting Mac support.
 
+.. image:: docs/_static/matrix_screenshot.png
+
 Credits
 -------
 

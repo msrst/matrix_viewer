@@ -81,13 +81,13 @@ Ready to contribute? Here's how to set up `matrix_viewer` for local development.
 5. When you're done making changes, check that the GUI still works. You can run
    flake8 if you want, but I don't really care.
    Currently there are no notable automatic tests since this is a GUI-centric project.
-   To get flake8 and tox, just pip install them into your virtualenv.
+   To get flake8 and tox, just pip install them into your virtualenv::
 
     $ flake8 matrix_viewer tests
-    $ python setup.py test or pytest
+    $ python setup.py test # or python -m pytest
     $ tox
 
-   It is more important to do the manual tests:
+    It is more important to do the manual tests::
 
     $ python tests/gui_manual.py
 
