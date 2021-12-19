@@ -14,6 +14,12 @@ class ViewerTab():
     You must declare on_destroy(self): This method is called by Viewer when the tab is closed by the user. It is not called if the whole window is closed. It must call viewer.unregister(self).
     """
 
+    def _on_key(self, event):
+        """
+        Called for keyboard events. Can be overriden by subclasses if needed
+        """
+        pass
+
     def _calc_font(self, user_font_size):
         """
         sets self.cell_font and self.font_size according to the specified user font and the screen DPI

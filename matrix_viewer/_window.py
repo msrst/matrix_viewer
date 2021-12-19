@@ -29,6 +29,7 @@ class Viewer():
         self._event_loop_id = None
         self._destroyed = False
         self.window.bind("<Destroy>", self._on_destroy)
+        self.window.bind("<Key>", self._on_q_pressed)
         manager.register(self)
 
         self.tabs = []
@@ -40,6 +41,20 @@ class Viewer():
                 self._destroyed = True
             else:
                 print('Error: double destroyed', self.window)
+
+    def _on_q_pressed(self, event):
+        if event.char == 'q':
+            self.window.destroy()  # this will also call self._on_destroy
+        else:
+            # tkinter does not auto-focus the currently active window, and I also do not want to manually change the focus. Therefore to manual event propagation
+            selected = self.paned.select()
+            found = 0
+            for tab, top_frame in self.tabs:
+                if str(top_frame) == selected:
+                    tab._on_key(event)
+                    found += 1
+            if found != 1:
+                print('Error: frame', selected, 'not found', found)
 
     def _on_tab_closed(self, event):
         new_tab_frames = self.paned.tabs()

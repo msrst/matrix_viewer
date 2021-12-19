@@ -1,10 +1,12 @@
 
 import tkinter as tk
+from tkinter.constants import E
 import tkinter.font
 import numpy as np
 import math
 import platform
 
+from ._manager import manager
 from ._tab import ViewerTab
 from ._utils import clip
 
@@ -39,7 +41,7 @@ class ViewerTabTable(ViewerTab):
         self.yscroll_item = 0
 
         self._focused_cell = None  # format: [x, y] if a cell is focused
-        self._selection = None  # format: [xstart, ystart, xend, yend] if something was selected
+        self._selection = None  # format: [xstart, ystart, xend, yend] if something was selected. It is always xstart < xend, ystart < yend
         self.mouse_press_start = None
         self.old_mouse_press_start = None
         self.last_autoscroll_time = 0
@@ -140,6 +142,76 @@ class ViewerTabTable(ViewerTab):
         self.size_y = event.height
         self._calc_size_scroll()
         self._draw()
+
+    def _on_key(self, event):
+        if event.keysym == 'Next':
+            if event.state & 0x01 == 0x01:  # shift
+                if self._focused_cell is not None:
+                    self._focused_cell[0] = min(self._focused_cell[0] + self.xscroll_page_size, self.xscroll_items - 1)
+                    self._selection = [self._focused_cell[0], self._focused_cell[1],
+                        self._focused_cell[0] + 1, self._focused_cell[1] + 1]
+                self.xscroll_item = min(self.xscroll_item + self.xscroll_page_size, self.xscroll_max)
+                self._scroll_x()
+            else:
+                if self._focused_cell is not None:
+                    self._focused_cell[1] = min(self._focused_cell[1] + self.yscroll_page_size, self.yscroll_items - 1)
+                    self._selection = [self._focused_cell[0], self._focused_cell[1],
+                        self._focused_cell[0] + 1, self._focused_cell[1] + 1]
+                self.yscroll_item = min(self.yscroll_item + self.yscroll_page_size, self.yscroll_max)
+                self._scroll_y()
+            self._draw()
+        elif event.keysym == 'Prior':
+            if event.state & 0x01 == 0x01:  # shift
+                if self._focused_cell is not None:
+                    self._focused_cell[0] = max(self._focused_cell[0] - self.xscroll_page_size, 0)
+                    self._selection = [self._focused_cell[0], self._focused_cell[1],
+                        self._focused_cell[0] + 1, self._focused_cell[1] + 1]
+                self.xscroll_item = max(self.xscroll_item - self.xscroll_page_size, 0)
+                self._scroll_x()
+            else:
+                if self._focused_cell is not None:
+                    self._focused_cell[1] = max(self._focused_cell[1] - self.yscroll_page_size, 0)
+                    self._selection = [self._focused_cell[0], self._focused_cell[1],
+                        self._focused_cell[0] + 1, self._focused_cell[1] + 1]
+                self.yscroll_item = max(self.yscroll_item - self.yscroll_page_size, 0)
+                self._scroll_y()
+            self._draw()
+
+        if self._focused_cell is not None:
+            next_cell = self._focused_cell.copy()
+            if event.keysym == 'Up':
+                next_cell[1] = max(self._focused_cell[1] - 1, 0)
+            elif event.keysym == 'Down':
+                next_cell[1] = min(self._focused_cell[1] + 1, self.yscroll_items - 1)
+            elif event.keysym == 'Left':
+                next_cell[0] = max(self._focused_cell[0] - 1, 0)
+            elif event.keysym == 'Right':
+                next_cell[0] = min(self._focused_cell[0] + 1, self.xscroll_items - 1)
+
+            if next_cell != self._focused_cell:
+                if event.state & 0x01 == 0x01:  # shift
+                    pass  # TODO
+                else:
+                    self._focused_cell = next_cell
+                    self.old_mouse_press_start = self._focused_cell
+                    self._selection = [self._focused_cell[0], self._focused_cell[1],
+                        self._focused_cell[0] + 1, self._focused_cell[1] + 1]
+
+                    # if focus cell is outside the window, autoscroll so that it moves inside
+                    if self._focused_cell[0] >= self.xscroll_item + self.xscroll_page_size:
+                        self.xscroll_item = self._focused_cell[0] - self.xscroll_page_size
+                        self._scroll_x()
+                    elif self._focused_cell[0] < self.xscroll_item:
+                        self.xscroll_item = self._focused_cell[0]
+                        self._scroll_x()
+
+                    if self._focused_cell[1] >= self.yscroll_item + self.yscroll_page_size:
+                        self.yscroll_item = self._focused_cell[1] - self.yscroll_page_size
+                        self._scroll_y()
+                    elif self._focused_cell[1] < self.yscroll_item:
+                        self.yscroll_item = self._focused_cell[1]
+                        self._scroll_y()
+                self._draw()
 
     def _calc_hit_cell(self, mouse_x, mouse_y):
         # Returns None, None if nothing was hit.
