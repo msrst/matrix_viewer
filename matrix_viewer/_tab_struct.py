@@ -24,10 +24,10 @@ class ViewerTabStruct(ViewerTabTable):
             self.object_attributes = list((str(i), value) for i, value in enumerate(self.object))
             self.row_heading_heading = ""
             default_title = f"list with {len(self.object)} elements"
-        elif type(self.object) == dict:
+        elif isinstance(self.object, dict):
             self.object_attributes = list(self.object.items())
             self.row_heading_heading = "Key"
-            default_title = f"dict with {len(self.object)} elements"
+            default_title = f"{type(self.object).__name__} with {len(self.object)} elements"
         else:
             self.object_attributes = []
             for element_name in dir(self.object):

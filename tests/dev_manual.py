@@ -2,6 +2,7 @@
 
 import os
 import sys
+from typing import OrderedDict
 sys.path.append(os.getcwd())  # to be able to include matrix_viewer
 
 import matrix_viewer
@@ -24,5 +25,7 @@ v3 = matrix_viewer.view(np.random.rand(50, 100) < 0.5)
 
 torch_array = torch.complex(torch.rand(100, 150).to('cuda'), torch.rand(100, 150).to('cuda'))
 v3 = matrix_viewer.view(torch_array)
+
+v3 = matrix_viewer.view(OrderedDict({2: 'hello', 3: 'lala'}))
 
 matrix_viewer.show_with_pyplot()
