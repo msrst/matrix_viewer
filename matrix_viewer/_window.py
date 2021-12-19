@@ -74,14 +74,20 @@ class Viewer():
         if len(self.tabs) == 0:
             self.window.destroy()  # close if all tabs were closed by the user
 
-    def view(self, object):
-        """Adds a new tab that visualizes the specified object."""
+    def view(self, object, tab_title=None, font_size=None, formatter=None):
+        """Adds a new tab that visualizes the specified object.
+
+        :param tab_title: The string show in the tab header.
+        :param font_size: The font size used in the cells and the row / column headings.
+        :param formatter: A function which converts the cells to string. Currently only used for
+                          Matrix / Vector viewer.
+        """
         if matches_tab_numpy(object):
-            return ViewerTabNumpy(self, object)
+            return ViewerTabNumpy(self, object, tab_title, font_size, formatter)
         elif matches_tab_struct(object):
-            return ViewerTabStruct(self, object)
+            return ViewerTabStruct(self, object, tab_title, font_size)
         else:
-            return ViewerTabText(self, object)
+            return ViewerTabText(self, object, tab_title, font_size)
 
 
 def viewer(title="Matrix Viewer"):
@@ -93,17 +99,21 @@ def viewer(title="Matrix Viewer"):
     return Viewer(title)
 
 
-def view(object):
+def view(object, tab_title=None, font_size=None, formatter=None):
     """Creates a new tab in the current window, which shows the object.
     Creates a new window if there are no opened windows.
 
     :param object: the object that is to be visualized.
+    :param tab_title: The string show in the tab header.
+    :param font_size: The font size used in the cells and the row / column headings.
+    :param formatter: A function which converts the cells to string. Currently only used for
+                        Matrix / Vector viewer.
     :return: The newly created viewer tab.
     """
     viewer = manager.last_viewer
     if viewer is None:
         viewer = Viewer()
-    return viewer.view(object)
+    return viewer.view(object, tab_title, font_size, formatter)
 
 
 def show(block=True):

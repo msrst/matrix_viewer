@@ -5,7 +5,6 @@ import numpy as np
 import math
 import platform
 
-from ._manager import manager
 from ._tab import ViewerTab
 from ._utils import clip
 
@@ -91,26 +90,6 @@ class ViewerTabTable(ViewerTab):
         self.yscroll_max = max(self.yscroll_items - self.yscroll_page_size, 0)
         self.yscroll_item = min(self.yscroll_item, self.yscroll_max)
         self._scroll_y()
-
-    def _calc_font(self, user_font_size):
-        dpi = manager.get_or_create_root().winfo_fpixels('1i')
-        if user_font_size is None:
-            if dpi >= 200:
-                self.font_size = 28
-            elif dpi >= 150:
-                self.font_size = 22
-            elif dpi >= 90:
-                self.font_size = 16
-            else:
-                self.font_size = 14
-        else:
-            self.font_size = user_font_size
-
-        # default root window needed to create font. -size -> size in pixels instead of inches
-        if platform.system() == 'Linux':
-            self.cell_font = tk.font.Font(size=-self.font_size, family="Sans")  # Arial was messing up
-        else:
-            self.cell_font = tk.font.Font(size=-self.font_size, family="Arial")
 
     def _scroll_y(self):
         if self.yscroll_items == 0:

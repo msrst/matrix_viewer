@@ -190,4 +190,4 @@ class ViewerTabNumpy(ViewerTabTable):
             return [self._focused_cell[1], self._focused_cell[0]]
 
 def matches_tab_numpy(object):
-    return isinstance(object, np.ndarray) and (object.ndim <= 2)
+    return isinstance(object, np.ndarray) and (object.ndim <= 2) and (object.dtype.isbuiltin == 1)
