@@ -1,7 +1,7 @@
 """Top-level package for Matrix Viewer."""
 
 __author__ = """Matthias Rosenthal"""
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 from ._window import pause, show, show_with_pyplot, view, viewer, Viewer
 from ._tab import ViewerTab
