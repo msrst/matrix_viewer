@@ -16,6 +16,7 @@ class ViewerTabTable(ViewerTab):
         self.xscroll_items = num_columns
         self.yscroll_items = num_rows
         self.highlight_selected_columns = highlight_selected_columns
+        self.title = title
 
         self.cell_vpadding = 5
         self.cell_hpadding = 5
@@ -43,12 +44,12 @@ class ViewerTabTable(ViewerTab):
 
         # see https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar#17457843
         if platform.system() == "Linux":
-            self.canvas1.bind_all("<Button-4>", lambda event: self._on_mouse_wheel(event, -1))
-            self.canvas1.bind_all("<Button-5>", lambda event: self._on_mouse_wheel(event, 1))
+            self.canvas1.bind("<Button-4>", lambda event: self._on_mouse_wheel(event, -1))
+            self.canvas1.bind("<Button-5>", lambda event: self._on_mouse_wheel(event, 1))
         elif platform.system() == "Windows":
-            self.canvas1.bind_all("<MouseWheel>", lambda event: self._on_mouse_wheel(event, -event.delta // 120))
+            self.canvas1.bind("<MouseWheel>", lambda event: self._on_mouse_wheel(event, -event.delta // 120))
         else:  # Mac (untested, sorry I have no Mac)
-            self.canvas1.bind_all("<MouseWheel>", lambda event: self._on_mouse_wheel(event, event.delta))
+            self.canvas1.bind("<MouseWheel>", lambda event: self._on_mouse_wheel(event, event.delta))
 
         self.xscrollbar = tk.Scrollbar(self.top_frame, orient=tk.HORIZONTAL, command=self._on_x_scroll)
         self.xscrollbar.grid(column=0, rows=1, sticky="ew")
@@ -78,24 +79,24 @@ class ViewerTabTable(ViewerTab):
         self.xscroll_page_size = (self.size_x - self.row_heading_width) // self.cell_width
         self.xscroll_max = max(self.xscroll_items - self.xscroll_page_size, 0)
         self.xscroll_item = min(self.xscroll_item, self.xscroll_max)
-        if self.xscroll_max == 0:
-            self.xscrollbar.set(0, 1)
-        else:
-            self._scroll_x()
+        self._scroll_x()
 
         self.yscroll_page_size = (self.size_y - self.cell_height) // self.cell_height
         self.yscroll_max = max(self.yscroll_items - self.yscroll_page_size, 0)
         self.yscroll_item = min(self.yscroll_item, self.yscroll_max)
-        if self.yscroll_max == 0:
-            self.yscrollbar.set(0, 1)
-        else:
-            self._scroll_y()
+        self._scroll_y()
 
     def _scroll_y(self):
-        self.yscrollbar.set(self.yscroll_item / self.yscroll_items, (self.yscroll_item + self.yscroll_page_size) / self.yscroll_items)
+        if self.yscroll_items == 0:
+            self.yscrollbar.set(0, 1)
+        else:
+            self.yscrollbar.set(self.yscroll_item / self.yscroll_items, (self.yscroll_item + self.yscroll_page_size) / self.yscroll_items)
 
     def _scroll_x(self):
-        self.xscrollbar.set(self.xscroll_item / self.xscroll_items, (self.xscroll_item + self.xscroll_page_size) / self.xscroll_items)
+        if self.xscroll_items == 0:
+            self.xscrollbar.set(0, 1)
+        else:
+            self.xscrollbar.set(self.xscroll_item / self.xscroll_items, (self.xscroll_item + self.xscroll_page_size) / self.xscroll_items)
 
     def _on_x_scroll(self, *args):
         new_xscroll_item = None

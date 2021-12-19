@@ -62,7 +62,8 @@ def test_struct_empty():
 def test_multiple_windows():
     print('TEST test_multiple_windows')
     print('TEST: Window "Matrix Viewer" has 1 tabs and window "Second Window" has 2 tabs?')
-    matrix_viewer.view(np.random.rand(10, 10))
+    print('TEST: Tab allows horizontal and vertical scrolling by using the mouse wheel?')
+    matrix_viewer.view(np.random.rand(100, 100))
     v1 = matrix_viewer.viewer('Second Window')
     matrix_viewer.view(v1)
     matrix_viewer.view(np.random.rand(5, 5))
