@@ -31,9 +31,13 @@ class ViewerTabStruct(ViewerTabTable):
         else:
             self.object_attributes = []
             for element_name in dir(self.object):
-                attr = getattr(self.object, element_name)
-                if (not callable(attr)) and (element_name not in ["__dict__", "__doc__", "__module__", "__weakref__"]):
-                    self.object_attributes.append((element_name, attr))
+                try:
+                    attr = getattr(self.object, element_name)
+                    if (not callable(attr)) and (element_name not in ["__dict__", "__doc__", "__module__", "__weakref__"]):
+                        self.object_attributes.append((element_name, attr))
+                except BaseException as e:
+                    # print(f'matrix_viewer: exception querying {element_name}: {e}')
+                    pass
             self.row_heading_heading = "Name"
 
         # format the values
@@ -55,7 +59,7 @@ class ViewerTabStruct(ViewerTabTable):
             else:
                 value_string = str(type(value))
 
-            clickable = matches_tab_numpy(value) or matches_tab_struct(value)
+            clickable = matches_tab_numpy(value) or matches_tab_struct(value) or (type(value).__name__ in ["ndarray", "Tensor"])
 
             self.object_value_strings.append(value_string)
             self.object_value_clickable.append(clickable)
@@ -114,4 +118,4 @@ class ViewerTabStruct(ViewerTabTable):
             x += self.cell_width
 
 def matches_tab_struct(object):
-    return not isinstance(object, (int, float, str, bytes, np.ndarray))
+    return (not isinstance(object, (int, float, str, bytes, np.ndarray))) and (type(object).__name__ != "Tensor") and (object is not None)

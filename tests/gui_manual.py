@@ -10,7 +10,7 @@ import numpy as np
 import matrix_viewer
 import matplotlib
 import platform
-
+import torchvision
 
 def open_with_pyplot(backend='TkAgg'):
     import matplotlib.pyplot as plt
@@ -70,9 +70,17 @@ def test_multiple_windows():
     matrix_viewer.view(np.random.rand(5, 5))
     matrix_viewer.show()
 
+def test_pytorch():
+    print('TEST test_pytorch')
+    print('TEST: click on a few parameters')
+    model = torchvision.models.vgg16(pretrained=False)
+    matrix_viewer.view(dict(model.named_parameters()))
+    matrix_viewer.show()
+
 test_pyplot_interoperability()
 if platform.system() == 'Linux':
     test_pyplot_interoperability_gtkagg()
 test_struct_strings()
 test_struct_empty()
 test_multiple_windows()
+test_pytorch()

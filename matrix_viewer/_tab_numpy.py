@@ -11,7 +11,16 @@ class ViewerTabNumpy(ViewerTabTable):
         """Creates a new tab in the specified viewer. Please use viewer.view instead because this selects the appropriate Tab subclass."""
         self.matrix = matrix
         self.num_dims = matrix.ndim
-        assert matrix.dtype.isbuiltin == 1, "matrix must be a type built-in into numpy (e. g. float32 ndarray), but it is a composed type or something else"
+
+        if type(self.matrix).__name__ == "Tensor":
+            self.matrix = self.matrix.cpu().numpy()  # convert pytorch to numpy. This is like a copy
+        else:
+            # If the user modifies the value after running viewer.view, but before viewer.show, the new values
+            # are displayed but one would expect that the state when viewer.view was called is displayed. Therefore,
+            # make a copy
+            self.matrix = self.matrix.copy()
+
+        assert self.matrix.dtype.isbuiltin == 1, "matrix must be a type built-in into numpy (e. g. float32 ndarray), but it is a composed type or something else"
 
         if matrix_title is None:
             if self.num_dims == 1:
@@ -21,35 +30,35 @@ class ViewerTabNumpy(ViewerTabTable):
 
         self._calc_font(font_size)
 
-        if matrix.dtype.kind == 'c':
-            self.max_val = np.max(matrix.real) + np.max(matrix.imag) * 1j
+        if self.matrix.dtype.kind == 'c':
+            self.max_val = np.max(self.matrix.real) + np.max(self.matrix.imag) * 1j
         else:
-            self.max_val = np.max(matrix)
+            self.max_val = np.max(self.matrix)
 
         small_formatted_threshold = 0.1
         max_value_for_fixed_point = 1e8
         if cell_formatter is None:
-            if matrix.dtype.kind in ['i', 'u']:  # signed, unsigned integer
+            if self.matrix.dtype.kind in ['i', 'u']:  # signed, unsigned integer
                 self.float_formatter = "{:d}".format
-            elif matrix.dtype.kind == 'b': # boolean
+            elif self.matrix.dtype.kind == 'b': # boolean
                 self.float_formatter = "{}".format
-            elif matrix.dtype.kind == 'f':
+            elif self.matrix.dtype.kind == 'f':
                 if self.max_val >= max_value_for_fixed_point:
                     self.float_formatter = "{:.6e}".format
                 else:
-                    if np.sum(np.logical_and(matrix != 0, np.abs(matrix) < 1e-4)) < small_formatted_threshold * np.product(matrix.shape):
+                    if np.sum(np.logical_and(self.matrix != 0, np.abs(self.matrix) < 1e-4)) < small_formatted_threshold * np.product(self.matrix.shape):
                         # below 10% of the values is not looking nice with non-exponential format
                         self.float_formatter = "{:.6f}".format
                     else:
                         self.float_formatter = "{:.6e}".format  # use exponential format
-            elif matrix.dtype.kind == 'c':  # complex float (there is no complex int)
+            elif self.matrix.dtype.kind == 'c':  # complex float (there is no complex int)
                 if (self.max_val.real >= max_value_for_fixed_point) or (self.max_val.imag >= max_value_for_fixed_point):
                     self.float_formatter = "{:.6e}".format
                 else:
-                    if ((np.sum(np.logical_and(matrix.real != 0, np.abs(matrix.real) < 1e-4))
-                        < small_formatted_threshold * np.product(matrix.shape)) and
-                        (np.sum(np.logical_and(matrix.imag != 0, np.abs(matrix.imag) < 1e-4))
-                        < small_formatted_threshold * np.product(matrix.shape))):
+                    if ((np.sum(np.logical_and(self.matrix.real != 0, np.abs(self.matrix.real) < 1e-4))
+                        < small_formatted_threshold * np.product(self.matrix.shape)) and
+                        (np.sum(np.logical_and(self.matrix.imag != 0, np.abs(self.matrix.imag) < 1e-4))
+                        < small_formatted_threshold * np.product(self.matrix.shape))):
                         # below 10% of both the imag and the real part is not looking nice with non-exponential format
                         self.float_formatter = "{:.6f}".format
                     else:
@@ -65,9 +74,9 @@ class ViewerTabNumpy(ViewerTabTable):
         self._font_changed()
 
         if self.num_dims == 1:
-            ViewerTabTable.__init__(self, viewer, matrix_title, 1, matrix.shape[0], highlight_selected_columns=False)
+            ViewerTabTable.__init__(self, viewer, matrix_title, 1, self.matrix.shape[0], highlight_selected_columns=False)
         else:
-            ViewerTabTable.__init__(self, viewer, matrix_title, matrix.shape[1], matrix.shape[0])
+            ViewerTabTable.__init__(self, viewer, matrix_title, self.matrix.shape[1], self.matrix.shape[0])
 
         self.canvas1.bind("<ButtonPress-1>", self._on_mouse_press)
         self.canvas1.bind("<ButtonRelease-1>", self._on_mouse_release)
@@ -190,4 +199,5 @@ class ViewerTabNumpy(ViewerTabTable):
             return [self._focused_cell[1], self._focused_cell[0]]
 
 def matches_tab_numpy(object):
-    return isinstance(object, np.ndarray) and (object.ndim <= 2) and (object.dtype.isbuiltin == 1)
+    return ((isinstance(object, np.ndarray) and (object.ndim <= 2) and (object.dtype.isbuiltin == 1)) or
+        ((type(object).__name__ == "Tensor") and (object.ndim <= 2)))  # pytorch
