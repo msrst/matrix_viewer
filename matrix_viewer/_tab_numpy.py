@@ -46,7 +46,7 @@ class ViewerTabNumpy(ViewerTabTable):
                 if self.max_val >= max_value_for_fixed_point:
                     self.float_formatter = "{:.6e}".format
                 else:
-                    if np.sum(np.logical_and(self.matrix != 0, np.abs(self.matrix) < 1e-4)) < small_formatted_threshold * np.product(self.matrix.shape):
+                    if np.sum(np.logical_and(self.matrix != 0, np.abs(self.matrix) < 1e-4)) < small_formatted_threshold * np.prod(self.matrix.shape):
                         # below 10% of the values is not looking nice with non-exponential format
                         self.float_formatter = "{:.6f}".format
                     else:
@@ -56,9 +56,9 @@ class ViewerTabNumpy(ViewerTabTable):
                     self.float_formatter = "{:.6e}".format
                 else:
                     if ((np.sum(np.logical_and(self.matrix.real != 0, np.abs(self.matrix.real) < 1e-4))
-                        < small_formatted_threshold * np.product(self.matrix.shape)) and
+                        < small_formatted_threshold * np.prod(self.matrix.shape)) and
                         (np.sum(np.logical_and(self.matrix.imag != 0, np.abs(self.matrix.imag) < 1e-4))
-                        < small_formatted_threshold * np.product(self.matrix.shape))):
+                        < small_formatted_threshold * np.prod(self.matrix.shape))):
                         # below 10% of both the imag and the real part is not looking nice with non-exponential format
                         self.float_formatter = "{:.6f}".format
                     else:
